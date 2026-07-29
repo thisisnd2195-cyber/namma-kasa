@@ -29,6 +29,10 @@ dependencies:
   # Regenerate with: pnpm contracts:generate
   namma_kasa_api:
     path: packages/namma_kasa_api
+  geolocator: ^14.0.2
+  flutter_foreground_task: ^10.0.0
+  mqtt_client: ^10.11.11
+  permission_handler: ^12.0.3
 
 dev_dependencies:
   flutter_test:

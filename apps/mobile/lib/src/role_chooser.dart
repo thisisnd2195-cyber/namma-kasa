@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'core/theme.dart';
+import 'driver/driver_auth_screen.dart';
 
 /// Single binary, two audiences: the entry screen picks the role and every
 /// downstream surface is scoped to it (FR-AUTH-01).
@@ -60,7 +61,9 @@ class RoleChooserScreen extends StatelessWidget {
   void _open(BuildContext context, AppRole role) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => _RolePlaceholder(role: role),
+        builder: (_) => role == AppRole.driver
+            ? const DriverAuthScreen()
+            : _RolePlaceholder(role: role),
       ),
     );
   }

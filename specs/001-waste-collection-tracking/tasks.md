@@ -47,6 +47,12 @@ equivalent in capability:
   devices with the driver's access token and restrict publish to their own trip topic, per
   `contracts/realtime.md` — that hook is not built yet and is a prerequisite for the pilot.
 
+- **T030 (driver photo capture) is deferred, not done.** The trip loop and its evidence
+  trail work without it; photo proof is an addition to that evidence rather than a
+  prerequisite. It needs the S3 presign endpoints plus camera and compression packages,
+  and is best done alongside the resident complaint photos in US5 which share the same
+  upload path.
+
 ## Phase 1: Setup (environment + repo restructure per research R13)
 
 - [X] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
@@ -95,8 +101,8 @@ equivalent in capability:
 - [X] T025 [US2] Tracking module (trips) in `apps/api/src/modules/tracking/`: start (pass sequencing via `route_pass_days` incl. `skipped` auto-marking scheduler, one-active-per-auto 409), end/abort (driver reason, admin abort, `auto_idle` force-end 45 min per FR-DRV-08), assignment snapshot into trip
 - [X] T026 [US2] Ingest in `apps/api/src/modules/tracking/ingest/`: EMQX JWT auth hook + publish ACL, MQTT consumer for `trips/{id}/pings`, HTTPS batch fallback endpoint, validation (accuracy ≤ 100 m, 3-ping rolling speed window per CHK036, seq dedup/ordering per contracts/realtime.md), Redis latest-position write, Timescale append
 - [X] T027 [US2] Watchdogs in `apps/api/src/modules/tracking/watchdogs/`: tracking-dropped detector (received_at gap > 3 min, auto-clear on resume, FR-DRV-05), idle auto-end prompt flow (30 min) + unreachable force-end (45 min)
-- [ ] T028 [P] [US2] Flutter driver registration + home in `apps/mobile/lib/src/driver/`: pre-provisioned phone flow, consent screen (trip-time tracking, EN/KN per CHK009), assigned auto/route area map, window, waste types, pass progress (FR-DRV-01)
-- [ ] T029 [US2] Flutter trip runner in `apps/mobile/lib/src/driver/trip/`: start/end (56 dp controls), foreground service via flutter_foreground_task + geolocator (5 s / 25 m cadence), MQTT publish with drift-backed unbounded offline spool and ordered replay (FR-DRV-03 as clarified), GPS-quality warning (CHK008), battery-optimization first-run wizard with OEM steps (FR-DRV-04)
+- [X] T028 [P] [US2] Flutter driver registration + home in `apps/mobile/lib/src/driver/`: pre-provisioned phone flow, consent screen (trip-time tracking, EN/KN per CHK009), assigned auto/route area map, window, waste types, pass progress (FR-DRV-01)
+- [X] T029 [US2] Flutter trip runner in `apps/mobile/lib/src/driver/trip/`: start/end (56 dp controls), foreground service via flutter_foreground_task + geolocator (5 s / 25 m cadence), MQTT publish with drift-backed unbounded offline spool and ordered replay (FR-DRV-03 as clarified), GPS-quality warning (CHK008), battery-optimization first-run wizard with OEM steps (FR-DRV-04)
 - [ ] T030 [P] [US2] Photo capture in `apps/mobile/lib/src/driver/media/`: camera-first, client compression ≤ 500 KB, drift offline queue, presign → PUT → confirm flow (FR-DRV-06); presign/confirm endpoints in `apps/api/src/modules/tracking/media/` with per-trip caps (CHK047)
 - [X] T031 [US2] Trip simulator `apps/api/scripts/simulate-trip.ts`: replays `fixtures/trail-route1.geojson` over MQTT as the seeded driver (quickstart §4)
 - [X] T032 [US2] Basic ward live dashboard in `apps/web/src/app/live/[wardId]/`: active trips map from Redis positions + tracking-dropped alerts (FR-DASH-01 minimum needed for US2 acceptance 5)
