@@ -58,4 +58,36 @@ class L10nEn extends L10n {
 
   @override
   String get backendUnavailable => 'Live tracking unavailable. Retrying…';
+
+  @override
+  String get reportProblem => 'Report a problem';
+
+  @override
+  String get rateToday => 'Rate today\'s collection';
+
+  @override
+  String get sendComplaint => 'Send complaint';
+
+  @override
+  String get complaintSent => 'Sent to your Ward Admin.';
+
+  @override
+  String get yourComplaints => 'Your complaints';
+
+  @override
+  String get offlineSaving => 'Offline — updates are saved';
+
+  @override
+  String get weakGps =>
+      'Weak GPS signal. Keep the phone where it can see the sky.';
+
+  @override
+  String get noAssignment => 'No assignment yet. Contact your Ward Admin.';
+
+  @override
+  String get allPassesDone => 'All passes for today are done.';
+
+  @override
+  String get locationBlocked =>
+      'Location is blocked. Enable it in Settings to start a trip.';
 }

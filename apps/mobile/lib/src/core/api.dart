@@ -113,6 +113,34 @@ class Api {
     await _dio.post<void>('/resident/ratings', data: {'stars': stars, 'comment': ?comment});
   }
 
+  Future<Map<String, dynamic>> presignTripMedia(String tripId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/driver/trips/$tripId/media/presign',
+      data: {'contentType': 'image/jpeg', 'type': 'collection_proof'},
+    );
+    return response.data!;
+  }
+
+  Future<void> confirmTripMedia({
+    required String tripId,
+    required String uploadId,
+    required String objectUrl,
+    double? lat,
+    double? lng,
+    DateTime? capturedAt,
+  }) async {
+    await _dio.post<void>(
+      '/driver/trips/$tripId/media/confirm',
+      data: {
+        'uploadId': uploadId,
+        'objectUrl': objectUrl,
+        'type': 'collection_proof',
+        if (lat != null && lng != null) 'geo': {'lat': lat, 'lng': lng},
+        'capturedAt': ?capturedAt?.toUtc().toIso8601String(),
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> driverAssignment() async {
     final response = await _dio.get<Map<String, dynamic>>('/driver/assignment');
     return response.data!;

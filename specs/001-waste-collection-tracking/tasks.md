@@ -47,11 +47,8 @@ equivalent in capability:
   devices with the driver's access token and restrict publish to their own trip topic, per
   `contracts/realtime.md` — that hook is not built yet and is a prerequisite for the pilot.
 
-- **T030 (driver photo capture) is deferred, not done.** The trip loop and its evidence
-  trail work without it; photo proof is an addition to that evidence rather than a
-  prerequisite. It needs the S3 presign endpoints plus camera and compression packages,
-  and is best done alongside the resident complaint photos in US5 which share the same
-  upload path.
+- **T030 (driver photo capture) was deferred and then completed** in the polish phase, once
+  the presign path it shares with complaint photos existed.
 
 - **Push delivery is console-only in development.** `PUSH_SENDER=console` logs what would
   have been sent; `PUSH_SENDER=fcm` with `FCM_SERVICE_ACCOUNT_JSON` uses real FCM. The
@@ -112,7 +109,7 @@ equivalent in capability:
 - [X] T027 [US2] Watchdogs in `apps/api/src/modules/tracking/watchdogs/`: tracking-dropped detector (received_at gap > 3 min, auto-clear on resume, FR-DRV-05), idle auto-end prompt flow (30 min) + unreachable force-end (45 min)
 - [X] T028 [P] [US2] Flutter driver registration + home in `apps/mobile/lib/src/driver/`: pre-provisioned phone flow, consent screen (trip-time tracking, EN/KN per CHK009), assigned auto/route area map, window, waste types, pass progress (FR-DRV-01)
 - [X] T029 [US2] Flutter trip runner in `apps/mobile/lib/src/driver/trip/`: start/end (56 dp controls), foreground service via flutter_foreground_task + geolocator (5 s / 25 m cadence), MQTT publish with drift-backed unbounded offline spool and ordered replay (FR-DRV-03 as clarified), GPS-quality warning (CHK008), battery-optimization first-run wizard with OEM steps (FR-DRV-04)
-- [ ] T030 [P] [US2] Photo capture in `apps/mobile/lib/src/driver/media/`: camera-first, client compression ≤ 500 KB, drift offline queue, presign → PUT → confirm flow (FR-DRV-06); presign/confirm endpoints in `apps/api/src/modules/tracking/media/` with per-trip caps (CHK047)
+- [X] T030 [P] [US2] Photo capture in `apps/mobile/lib/src/driver/media/`: camera-first, client compression ≤ 500 KB, drift offline queue, presign → PUT → confirm flow (FR-DRV-06); presign/confirm endpoints in `apps/api/src/modules/tracking/media/` with per-trip caps (CHK047)
 - [X] T031 [US2] Trip simulator `apps/api/scripts/simulate-trip.ts`: replays `fixtures/trail-route1.geojson` over MQTT as the seeded driver (quickstart §4)
 - [X] T032 [US2] Basic ward live dashboard in `apps/web/src/app/live/[wardId]/`: active trips map from Redis positions + tracking-dropped alerts (FR-DASH-01 minimum needed for US2 acceptance 5)
 - [X] T033 [US2] Integration tests in `apps/api/test/tracking.spec.ts`: US2 acceptance 1–5 (unprovisioned refusal, offline replay ordering, pass gating, idle auto-end, dropped alert) with Testcontainers (Postgres/Redis/EMQX)
@@ -160,15 +157,15 @@ equivalent in capability:
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T053 [P] Account deletion endpoint + flow (PII anonymization within 30 days per CHK010) in `apps/api/src/modules/auth/deletion/` and settings screens in `apps/mobile/lib/src/core/settings/`
-- [ ] T054 [P] Media lifecycle job in `apps/api/src/modules/tracking/media/retention.ts`: 180-day retention, open-complaint hold (CHK015)
-- [ ] T055 [P] Accessibility pass per NFR-11: TalkBack labels + ≥ 48 dp audit in `apps/mobile/`, WCAG 2.1 AA sweep of `apps/web/` portal pages
-- [ ] T056 [P] Localization completion: full EN/KN ARB coverage for resident + driver surfaces (driver defaults KN per CHK045); fallback-EN lint check
-- [ ] T057 [P] Observability per NFR-09: OpenTelemetry traces + Prometheus metrics in `apps/api/`, tracking-health dashboard tiles (per-ward drops %, ping latency, alert queue age per CHK046)
-- [ ] T058 Degradation controls (CHK043): live-cadence stretch + WS pause switches in `apps/api/src/modules/tracking/live/`, banner support in resident app
+- [X] T053 [P] Account deletion endpoint + flow (PII anonymization within 30 days per CHK010) in `apps/api/src/modules/auth/deletion/` and settings screens in `apps/mobile/lib/src/core/settings/`
+- [X] T054 [P] Media lifecycle job in `apps/api/src/modules/tracking/media/retention.ts`: 180-day retention, open-complaint hold (CHK015)
+- [X] T055 [P] Accessibility pass per NFR-11: TalkBack labels + ≥ 48 dp audit in `apps/mobile/`, WCAG 2.1 AA sweep of `apps/web/` portal pages
+- [X] T056 [P] Localization completion: full EN/KN ARB coverage for resident + driver surfaces (driver defaults KN per CHK045); fallback-EN lint check
+- [X] T057 [P] Observability per NFR-09: OpenTelemetry traces + Prometheus metrics in `apps/api/`, tracking-health dashboard tiles (per-ward drops %, ping latency, alert queue age per CHK046)
+- [X] T058 Degradation controls (CHK043): live-cadence stretch + WS pause switches in `apps/api/src/modules/tracking/live/`, banner support in resident app
 - [X] T059 Rewrite `README.md` for the tracking platform (stack, quickstart pointer, Flutter + docker prerequisites) — closes the v3.0.0 sync-report flag
-- [ ] T060 Full quickstart execution (all §1–§5 gates green, contract drift check clean) and record results; initial git commit series on `main`
-- [ ] T061 [P] Load test in `apps/api/test/load/`: k6 scenarios for MQTT/HTTPS ingest at 1,000 msg/s and WS fan-out at pilot-representative concurrency; assert NFR-03 latency budgets (SC-006 pre-pilot verification)
+- [X] T060 Full quickstart execution (all §1–§5 gates green, contract drift check clean) and record results; initial git commit series on `main`
+- [X] T061 [P] Load test in `apps/api/test/load/`: k6 scenarios for MQTT/HTTPS ingest at 1,000 msg/s and WS fan-out at pilot-representative concurrency; assert NFR-03 latency budgets (SC-006 pre-pilot verification)
 
 ## Dependencies
 

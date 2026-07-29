@@ -59,4 +59,37 @@ class L10nKn extends L10n {
   @override
   String get backendUnavailable =>
       'ಲೈವ್ ಟ್ರ್ಯಾಕಿಂಗ್ ಲಭ್ಯವಿಲ್ಲ. ಮರುಪ್ರಯತ್ನಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get reportProblem => 'ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ';
+
+  @override
+  String get rateToday => 'ಇಂದಿನ ಸಂಗ್ರಹಣೆಗೆ ರೇಟಿಂಗ್ ನೀಡಿ';
+
+  @override
+  String get sendComplaint => 'ದೂರು ಕಳುಹಿಸಿ';
+
+  @override
+  String get complaintSent => 'ನಿಮ್ಮ ವಾರ್ಡ್ ಅಡ್ಮಿನ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get yourComplaints => 'ನಿಮ್ಮ ದೂರುಗಳು';
+
+  @override
+  String get offlineSaving => 'ಆಫ್‌ಲೈನ್ — ಮಾಹಿತಿ ಉಳಿಸಲಾಗುತ್ತಿದೆ';
+
+  @override
+  String get weakGps =>
+      'ಜಿಪಿಎಸ್ ಸಂಕೇತ ದುರ್ಬಲವಾಗಿದೆ. ಫೋನ್ ಅನ್ನು ಆಕಾಶ ಕಾಣುವಲ್ಲಿ ಇರಿಸಿ.';
+
+  @override
+  String get noAssignment =>
+      'ಇನ್ನೂ ನಿಯೋಜನೆ ಇಲ್ಲ. ನಿಮ್ಮ ವಾರ್ಡ್ ಅಡ್ಮಿನ್ ಸಂಪರ್ಕಿಸಿ.';
+
+  @override
+  String get allPassesDone => 'ಇಂದಿನ ಎಲ್ಲಾ ಸುತ್ತುಗಳು ಮುಗಿದಿವೆ.';
+
+  @override
+  String get locationBlocked =>
+      'ಸ್ಥಳ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸಲು ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಸಕ್ರಿಯಗೊಳಿಸಿ.';
 }

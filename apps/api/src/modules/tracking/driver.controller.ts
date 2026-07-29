@@ -1,7 +1,9 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import {
+  confirmMediaSchema,
   endTripSchema,
   pingBatchSchema,
+  presignRequestSchema,
   startTripSchema,
   type AccessClaims,
 } from "@namma-kasa/shared";
@@ -9,6 +11,7 @@ import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { Throttle } from "../../common/rate-limit/rate-limit.guard";
 import { CurrentUser, Roles } from "../auth/decorators";
 import { IngestService } from "./ingest.service";
+import { MediaService } from "./media.service";
 import { TripsService } from "./trips.service";
 
 @Controller("driver")
@@ -17,6 +20,7 @@ export class DriverController {
   constructor(
     private readonly trips: TripsService,
     private readonly ingest: IngestService,
+    private readonly media: MediaService,
   ) {}
 
   @Get("assignment")
@@ -62,5 +66,28 @@ export class DriverController {
     const context = await this.ingest.contextFor(tripId);
     if (!context) return { accepted: 0, rejected: body.pings.length };
     return this.ingest.ingest(context, body.pings);
+  }
+
+  /** Presign, PUT, confirm: the API never handles the image bytes itself. */
+  @Post("trips/:id/media/presign")
+  @Throttle({ limit: 20, windowSec: 3600 })
+  async presign(
+    @Param("id") tripId: string,
+    @Body(new ZodValidationPipe(presignRequestSchema)) body: { contentType: string },
+    @CurrentUser() user: AccessClaims,
+  ) {
+    await this.trips.requireOwnedTrip(tripId, user.sub);
+    return this.media.presign({ tripId, prefix: `trips/${tripId}`, contentType: body.contentType });
+  }
+
+  @Post("trips/:id/media/confirm")
+  async confirmMedia(
+    @Param("id") tripId: string,
+    @Body(new ZodValidationPipe(confirmMediaSchema)) body: never,
+    @CurrentUser() user: AccessClaims,
+  ) {
+    await this.trips.requireOwnedTrip(tripId, user.sub);
+    const driver = await this.trips.driverIdFor(user.sub);
+    return this.media.confirm({ tripId, driverId: driver, ...(body as object) } as never);
   }
 }

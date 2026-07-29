@@ -186,6 +186,66 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Live tracking unavailable. Retrying…'**
   String get backendUnavailable;
+
+  /// No description provided for @reportProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get reportProblem;
+
+  /// No description provided for @rateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate today\'s collection'**
+  String get rateToday;
+
+  /// No description provided for @sendComplaint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send complaint'**
+  String get sendComplaint;
+
+  /// No description provided for @complaintSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to your Ward Admin.'**
+  String get complaintSent;
+
+  /// No description provided for @yourComplaints.
+  ///
+  /// In en, this message translates to:
+  /// **'Your complaints'**
+  String get yourComplaints;
+
+  /// No description provided for @offlineSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline — updates are saved'**
+  String get offlineSaving;
+
+  /// No description provided for @weakGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak GPS signal. Keep the phone where it can see the sky.'**
+  String get weakGps;
+
+  /// No description provided for @noAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignment yet. Contact your Ward Admin.'**
+  String get noAssignment;
+
+  /// No description provided for @allPassesDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All passes for today are done.'**
+  String get allPassesDone;
+
+  /// No description provided for @locationBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is blocked. Enable it in Settings to start a trip.'**
+  String get locationBlocked;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

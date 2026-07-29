@@ -9,22 +9,44 @@
   "noActiveTrip": "No auto on your route right now",
   "nextCollection": "Next collection: {window}",
   "@nextCollection": {
-    "placeholders": { "window": { "type": "String" } }
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
   },
   "passProgress": "Pass {current} of {total}",
   "@passProgress": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "lastCollected": "Last collected {when}",
   "@lastCollected": {
-    "placeholders": { "when": { "type": "String" } }
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
   "startTrip": "Start trip",
   "endTrip": "End trip",
   "trackingActive": "Sharing location",
   "pendingReview": "We are confirming your route",
-  "backendUnavailable": "Live tracking unavailable. Retrying…"
+  "backendUnavailable": "Live tracking unavailable. Retrying…",
+  "reportProblem": "Report a problem",
+  "rateToday": "Rate today's collection",
+  "sendComplaint": "Send complaint",
+  "complaintSent": "Sent to your Ward Admin.",
+  "yourComplaints": "Your complaints",
+  "offlineSaving": "Offline — updates are saved",
+  "weakGps": "Weak GPS signal. Keep the phone where it can see the sky.",
+  "noAssignment": "No assignment yet. Contact your Ward Admin.",
+  "allPassesDone": "All passes for today are done.",
+  "locationBlocked": "Location is blocked. Enable it in Settings to start a trip."
 }

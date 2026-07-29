@@ -262,6 +262,16 @@ export class TripsService {
     });
   }
 
+  async driverIdFor(userId: string): Promise<string> {
+    const driver = await this.db
+      .selectFrom("drivers")
+      .select("id")
+      .where("user_id", "=", userId)
+      .executeTakeFirst();
+    if (!driver) throw new HttpException("Not a driver", HttpStatus.FORBIDDEN);
+    return driver.id;
+  }
+
   async requireOwnedTrip(tripId: string, userId: string): Promise<void> {
     const owned = await this.db
       .selectFrom("trips as t")
