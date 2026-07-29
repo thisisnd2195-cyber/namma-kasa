@@ -4,6 +4,7 @@ import type { Server } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import type { LiveFrame } from "@namma-kasa/shared";
 import { TokensService } from "../auth/tokens.service";
+import { DegradationService } from "./degradation";
 
 /** A socket outlives the 15-minute access token, so it is cycled instead. */
 const MAX_SOCKET_LIFETIME_MS = 60 * 60_000;
@@ -33,9 +34,14 @@ export class LiveGateway implements OnModuleDestroy {
   private readonly subscribers = new Set<Subscriber>();
   private heartbeat?: NodeJS.Timeout;
 
+  /** Refreshed on a timer so the hot path never awaits Redis per frame. */
+  private minFrameIntervalMs = MIN_FRAME_INTERVAL_MS;
+  private streamEnabled = true;
+
   constructor(
     private readonly tokens: TokensService,
     private readonly config: ConfigService,
+    private readonly degradation: DegradationService,
   ) {}
 
   attach(httpServer: Server): void {
@@ -81,7 +87,10 @@ export class LiveGateway implements OnModuleDestroy {
       });
     });
 
-    this.heartbeat = setInterval(() => this.sweep(), HEARTBEAT_MS);
+    this.heartbeat = setInterval(() => {
+      this.sweep();
+      void this.refreshLoadPolicy();
+    }, HEARTBEAT_MS);
     this.heartbeat.unref();
     this.logger.log("Resident live stream listening on /v1/live");
   }
@@ -103,10 +112,11 @@ export class LiveGateway implements OnModuleDestroy {
     const now = Date.now();
     for (const subscriber of this.subscribers) {
       if (subscriber.routeId !== routeId) continue;
+      if (!this.streamEnabled) continue;
       const last = subscriber.lastSentAt.get(frame.tripId) ?? 0;
       // Clients interpolate between frames, so a faster stream would only cost
       // battery without looking any smoother.
-      if (now - last < MIN_FRAME_INTERVAL_MS) continue;
+      if (now - last < this.minFrameIntervalMs) continue;
       subscriber.lastSentAt.set(frame.tripId, now);
       this.send(subscriber.socket, frame);
     }
@@ -131,6 +141,26 @@ export class LiveGateway implements OnModuleDestroy {
         subscriber.socket.close();
         this.subscribers.delete(subscriber);
       }
+    }
+  }
+
+  /**
+   * Under load the live map is the first thing to give: cadence stretches,
+   * then the stream pauses entirely. Ingest and notifications are protected
+   * last (Clarifications CHK043).
+   */
+  private async refreshLoadPolicy(): Promise<void> {
+    try {
+      this.minFrameIntervalMs = await this.degradation.liveIntervalMs();
+      const enabled = await this.degradation.liveStreamEnabled();
+      if (this.streamEnabled && !enabled) {
+        for (const subscriber of this.subscribers) subscriber.socket.close();
+        this.subscribers.clear();
+        this.logger.warn("Live stream paused by degradation level");
+      }
+      this.streamEnabled = enabled;
+    } catch {
+      // Redis unreachable: keep serving at the normal cadence.
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/theme.dart';
+import 'photo_capture.dart';
 import 'trip_tracker.dart';
 
 /// The driver's whole day: what they are driving, where, and one big button.
@@ -59,15 +60,76 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         permission == LocationPermission.whileInUse;
   }
 
+  /// OEM battery managers silently kill unexempted apps, which is the
+  /// spec's top-listed risk. Asked once, before the first trip.
+  Future<void> _runTrackingWizard() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keep tracking alive'),
+        content: const Text(
+          'Your phone may stop sharing location when the screen is off.\n\n'
+          'Next you will be asked to allow notifications and to exempt this app '
+          'from battery optimisation. Please allow both.\n\n'
+          'On Xiaomi, Oppo, Vivo and Realme phones also enable Autostart for '
+          'Namma Kasa in Settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (proceed ?? false) {
+      await ref.read(tripTrackerProvider.notifier).requestTrackingPermissions();
+    }
+  }
+
+  /// FR-DRV-08: prompt the driver rather than ending their trip behind their
+  /// back. The backend only force-ends once the device is unreachable too.
+  Future<void> _maybePromptIdle(String tripId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Still collecting?'),
+        content: const Text(
+          'There has been no movement for 30 minutes. Is this trip finished?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Still going'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('End trip'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) await _endTrip(tripId);
+  }
+
   Future<void> _startTrip(int passNumber) async {
     if (!await _ensureLocationPermission()) return;
+    await _runTrackingWizard();
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final trip = await ref.read(apiProvider).startTrip(passNumber);
-      await ref.read(tripTrackerProvider.notifier).start(trip['id'] as String);
+      final auto = (_assignment?['auto'] as Map<String, dynamic>?)?['registrationNumber'];
+      await ref.read(tripTrackerProvider.notifier).start(
+            trip['id'] as String,
+            registration: auto as String? ?? '',
+          );
       await _load();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -185,15 +247,33 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
       if (activeTrip != null) ...[
         _TrackingPanel(status: status, theme: theme),
         const SizedBox(height: Tokens.space3),
-        FilledButton(
-          onPressed: _busy ? null : () => _endTrip(activeTrip['id'] as String),
-          style: FilledButton.styleFrom(backgroundColor: Tokens.error),
-          child: Text(_busy ? 'Ending…' : 'End trip'),
+        _PhotoRow(tripId: activeTrip['id'] as String, theme: theme),
+        const SizedBox(height: Tokens.space3),
+        if (status.idleMinutes >= 30)
+          OutlinedButton(
+            onPressed: () => _maybePromptIdle(activeTrip['id'] as String),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, Tokens.driverTouchTarget),
+            ),
+            child: const Text('No movement for a while — finished?'),
+          ),
+        Semantics(
+          button: true,
+          label: 'End the current trip and stop sharing location',
+          child: FilledButton(
+            onPressed: _busy ? null : () => _endTrip(activeTrip['id'] as String),
+            style: FilledButton.styleFrom(backgroundColor: Tokens.error),
+            child: Text(_busy ? 'Ending…' : 'End trip'),
+          ),
         ),
       ] else if (nextPass != null && isCollectionDay)
-        FilledButton(
-          onPressed: _busy ? null : () => _startTrip(nextPass),
-          child: Text(_busy ? 'Starting…' : 'Start pass $nextPass'),
+        Semantics(
+          button: true,
+          label: 'Start pass $nextPass and begin sharing location',
+          child: FilledButton(
+            onPressed: _busy ? null : () => _startTrip(nextPass),
+            child: Text(_busy ? 'Starting…' : 'Start pass $nextPass'),
+          ),
         )
       else
         Text(
@@ -202,6 +282,49 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
           textAlign: TextAlign.center,
         ),
     ];
+  }
+}
+
+/// Collection proof. Optional per pass, so it never blocks the trip.
+class _PhotoRow extends ConsumerWidget {
+  const _PhotoRow({required this.tripId, required this.theme});
+
+  final String tripId;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final queue = ref.watch(photoQueueProvider);
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              await ref.read(photoQueueProvider.notifier).capture();
+              await ref.read(photoQueueProvider.notifier).flush(tripId);
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, Tokens.driverTouchTarget),
+            ),
+            icon: const Icon(Icons.photo_camera),
+            label: const Text('Add photo'),
+          ),
+        ),
+        if (queue.uploaded > 0 || queue.pending.isNotEmpty) ...[
+          const SizedBox(width: Tokens.space3),
+          Semantics(
+            label: '${queue.uploaded} photos uploaded, '
+                '${queue.pending.length} waiting to upload',
+            child: Text(
+              queue.pending.isEmpty
+                  ? '${queue.uploaded} sent'
+                  : '${queue.uploaded} sent · ${queue.pending.length} waiting',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -220,9 +343,12 @@ class _TrackingPanel extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              degraded ? Icons.cloud_off : Icons.location_on,
-              color: degraded ? Tokens.warning : Tokens.success,
+            // Decorative: the adjacent text already says the same thing.
+            ExcludeSemantics(
+              child: Icon(
+                degraded ? Icons.cloud_off : Icons.location_on,
+                color: degraded ? Tokens.warning : Tokens.success,
+              ),
             ),
             const SizedBox(width: Tokens.space2),
             Expanded(
@@ -234,9 +360,14 @@ class _TrackingPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Tokens.space1),
-        Text(
-          '${status.sentPings} sent · ${status.pendingPings} waiting',
-          style: theme.textTheme.bodyMedium,
+        Semantics(
+          liveRegion: true,
+          label: '${status.sentPings} location updates sent, '
+              '${status.pendingPings} waiting to send',
+          child: Text(
+            '${status.sentPings} sent · ${status.pendingPings} waiting',
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
         if (status.poorGps)
           Padding(

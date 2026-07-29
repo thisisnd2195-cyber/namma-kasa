@@ -12,6 +12,7 @@ import { Throttle } from "../../common/rate-limit/rate-limit.guard";
 import { CurrentUser, Roles } from "../auth/decorators";
 import { IngestService } from "./ingest.service";
 import { MediaService } from "./media.service";
+import { MqttTokenService } from "./mqtt-token.service";
 import { TripsService } from "./trips.service";
 
 @Controller("driver")
@@ -21,6 +22,7 @@ export class DriverController {
     private readonly trips: TripsService,
     private readonly ingest: IngestService,
     private readonly media: MediaService,
+    private readonly mqttTokens: MqttTokenService,
   ) {}
 
   @Get("assignment")
@@ -66,6 +68,16 @@ export class DriverController {
     const context = await this.ingest.contextFor(tripId);
     if (!context) return { accepted: 0, rejected: body.pings.length };
     return this.ingest.ingest(context, body.pings);
+  }
+
+  /**
+   * Broker credentials for this trip. Scoped to one topic and short-lived, so
+   * a stolen device cannot publish for anyone else (contracts/realtime.md §1).
+   */
+  @Post("trips/:id/mqtt-token")
+  async mqttToken(@Param("id") tripId: string, @CurrentUser() user: AccessClaims) {
+    await this.trips.requireOwnedTrip(tripId, user.sub);
+    return this.mqttTokens.issue(user.sub, tripId);
   }
 
   /** Presign, PUT, confirm: the API never handles the image bytes itself. */

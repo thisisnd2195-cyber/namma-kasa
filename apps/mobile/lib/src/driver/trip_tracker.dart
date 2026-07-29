@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -23,6 +24,7 @@ class TripTrackerStatus {
     required this.sentPings,
     this.poorGps = false,
     this.message,
+    this.idleMinutes = 0,
   });
 
   final TrackingState state;
@@ -31,12 +33,16 @@ class TripTrackerStatus {
   final bool poorGps;
   final String? message;
 
+  /// Minutes since the auto last actually moved, used to prompt the driver.
+  final int idleMinutes;
+
   TripTrackerStatus copyWith({
     TrackingState? state,
     int? pendingPings,
     int? sentPings,
     bool? poorGps,
     String? message,
+    int? idleMinutes,
   }) =>
       TripTrackerStatus(
         state: state ?? this.state,
@@ -44,6 +50,7 @@ class TripTrackerStatus {
         sentPings: sentPings ?? this.sentPings,
         poorGps: poorGps ?? this.poorGps,
         message: message,
+        idleMinutes: idleMinutes ?? this.idleMinutes,
       );
 
   static const initial = TripTrackerStatus(
@@ -71,17 +78,65 @@ class TripTracker extends StateNotifier<TripTrackerStatus> {
   String? _tripId;
   double _distanceM = 0;
   Position? _previous;
+  DateTime? _lastMovedAt;
 
   int get distanceCoveredM => _distanceM.round();
 
-  Future<void> start(String tripId) async {
+  /// Android stops background location for an app without a foreground
+  /// service, and a collection round is mostly spent with the phone in a
+  /// pocket. Without this the trail has holes exactly where the work happened
+  /// (FR-DRV-03, FR-DRV-04).
+  Future<void> _startForegroundService(String registration) async {
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'namma_kasa_tracking',
+        channelName: 'Collection trip',
+        channelDescription: 'Shown while your location is being shared.',
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.repeat(_intervalSeconds * 1000),
+        autoRunOnBoot: false,
+        allowWakeLock: true,
+        allowWifiLock: false,
+      ),
+    );
+
+    await FlutterForegroundTask.startService(
+      notificationTitle: 'Sharing location',
+      notificationText: 'Trip in progress · $registration',
+    );
+  }
+
+  Future<void> _stopForegroundService() async {
+    if (await FlutterForegroundTask.isRunningService) {
+      await FlutterForegroundTask.stopService();
+    }
+  }
+
+  /// Asks for the exemptions OEM battery managers need, in the order that
+  /// produces the fewest dialogs (Xiaomi, Oppo and Vivo kill unexempted apps).
+  Future<void> requestTrackingPermissions() async {
+    if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    }
+    final notifications = await FlutterForegroundTask.checkNotificationPermission();
+    if (notifications != NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+  }
+
+  Future<void> start(String tripId, {String registration = ''}) async {
     if (state.state == TrackingState.running) return;
     _tripId = tripId;
     _spool.clear();
     _quality.reset();
     _distanceM = 0;
     _previous = null;
+    _lastMovedAt = null;
 
+    await _startForegroundService(registration);
     await _connectMqtt(tripId);
 
     _positions = Geolocator.getPositionStream(
@@ -112,11 +167,19 @@ class TripTracker extends StateNotifier<TripTrackerStatus> {
     _mqtt?.disconnect();
     _mqtt = null;
     _tripId = null;
+    await _stopForegroundService();
     state = TripTrackerStatus.initial;
   }
 
   void _onPosition(Position position) {
     if (_previous != null) {
+      final moved = Geolocator.distanceBetween(
+        _previous!.latitude,
+        _previous!.longitude,
+        position.latitude,
+        position.longitude,
+      );
+      if (moved > _distanceFilterM) _lastMovedAt = DateTime.now();
       _distanceM += Geolocator.distanceBetween(
         _previous!.latitude,
         _previous!.longitude,
@@ -136,9 +199,11 @@ class TripTracker extends StateNotifier<TripTrackerStatus> {
       accuracy: position.accuracy,
     );
 
+    _lastMovedAt ??= DateTime.now();
     state = state.copyWith(
       pendingPings: _spool.pendingCount,
       poorGps: _quality.isPoor,
+      idleMinutes: DateTime.now().difference(_lastMovedAt!).inMinutes,
     );
   }
 
@@ -185,7 +250,13 @@ class TripTracker extends StateNotifier<TripTrackerStatus> {
       ..autoReconnect = true;
 
     try {
-      await client.connect();
+      // The broker denies anything without a per-trip token whose ACL grants
+      // publish to exactly this trip's topic.
+      final credentials = await _api.mqttToken(tripId);
+      await client.connect(
+        credentials['username'] as String,
+        credentials['password'] as String,
+      );
       _mqtt = client;
     } catch (_) {
       // HTTPS fallback covers this; not worth failing the trip over.

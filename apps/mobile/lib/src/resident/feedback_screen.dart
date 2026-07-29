@@ -113,6 +113,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               children: [
                 for (var star = 1; star <= 5; star++)
                   IconButton(
+                    tooltip: '$star star${star == 1 ? '' : 's'}',
                     onPressed: _busy || _stars != null ? null : () => _submitRating(star),
                     icon: Icon(
                       (_stars ?? 0) >= star ? Icons.star : Icons.star_border,

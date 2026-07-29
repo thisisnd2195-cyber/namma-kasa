@@ -9,6 +9,9 @@ import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/map/map_view.dart';
 import '../core/theme.dart';
+import 'feedback_screen.dart';
+import 'live_stream.dart';
+import 'settings_sheet.dart';
 
 /// The screen that answers "when is the auto coming?".
 ///
@@ -32,9 +35,9 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
   void initState() {
     super.initState();
     unawaited(_load());
-    // The WebSocket carries live movement; this only keeps schedule and
-    // last-collected honest if the app is left open.
-    _poll = Timer.periodic(const Duration(seconds: 20), (_) => unawaited(_load()));
+    // The socket carries movement; this only keeps schedule and last-collected
+    // honest if the app is left open.
+    _poll = Timer.periodic(const Duration(seconds: 60), (_) => unawaited(_load()));
   }
 
   @override
@@ -46,7 +49,10 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
   Future<void> _load() async {
     try {
       final data = await ref.read(apiProvider).residentHome();
-      if (mounted) setState(() => _home = data);
+      if (!mounted) return;
+      setState(() => _home = data);
+      final routeId = (data['route'] as Map<String, dynamic>?)?['id'] as String?;
+      if (routeId != null) await ref.read(liveStreamProvider.notifier).connect(routeId);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -65,12 +71,49 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
 
     final home = _home;
     final route = home?['route'] as Map<String, dynamic>?;
-    final autos = (home?['servingAutos'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
     final household = home?['household'] as Map<String, dynamic>?;
     final pin = household?['pin'] as Map<String, dynamic>?;
+    // Socket positions win over the polled snapshot: they are newer.
+    final live = ref.watch(liveStreamProvider);
+    final polled = (home?['servingAutos'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final autos = live.isNotEmpty
+        ? live.values
+            .map((a) => {
+                  'tripId': a.tripId,
+                  'registrationNumber': a.registrationNumber,
+                  'passNumber': a.passNumber,
+                  'lat': a.lat,
+                  'lng': a.lng,
+                  'distanceM': _distanceTo(pin, a.lat, a.lng),
+                })
+            .toList()
+        : polled;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.residentHomeTitle)),
+      appBar: AppBar(
+        title: Text(l10n.residentHomeTitle),
+        actions: [
+          IconButton(
+            tooltip: 'Alert settings',
+            icon: const Icon(Icons.tune),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => const ResidentSettingsSheet(),
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.reportProblem,
+            icon: const Icon(Icons.report_problem_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => FeedbackScreen(
+                  canRateToday: (_home?['canRateToday'] as bool?) ?? false,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -140,9 +183,14 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                               auto['registrationNumber'] as String,
                               style: theme.textTheme.titleMedium,
                             ),
-                            Text(
-                              _distanceLabel((auto['distanceM'] as num).toInt()),
-                              style: theme.textTheme.displaySmall,
+                            Semantics(
+                              liveRegion: true,
+                              label: 'Auto ${auto['registrationNumber']} is '
+                                  '${_distanceLabel((auto['distanceM'] as num).toInt())}',
+                              child: Text(
+                                _distanceLabel((auto['distanceM'] as num).toInt()),
+                                style: theme.textTheme.displaySmall,
+                              ),
                             ),
                             Text(
                               l10n.passProgress(
@@ -193,6 +241,17 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
         ),
       ),
     );
+  }
+
+  /// Straight-line metres, good enough to render a distance chip.
+  int _distanceTo(Map<String, dynamic>? pin, double lat, double lng) {
+    if (pin == null) return 0;
+    const metresPerDegree = 111_320.0;
+    final dLat = (lat - (pin['lat'] as num).toDouble()) * metresPerDegree;
+    final dLng = (lng - (pin['lng'] as num).toDouble()) * metresPerDegree * 0.97;
+    return (dLat * dLat + dLng * dLng).abs().toInt() == 0
+        ? 0
+        : (dLat.abs() + dLng.abs()).round();
   }
 
   /// Rounded to 50 m, matching the notification copy, so the map and the push

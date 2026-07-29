@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'core/theme.dart';
 import 'driver/driver_auth_screen.dart';
+import 'resident/resident_auth_screen.dart';
 
 /// Single binary, two audiences: the entry screen picks the role and every
 /// downstream surface is scoped to it (FR-AUTH-01).
@@ -63,38 +64,7 @@ class RoleChooserScreen extends StatelessWidget {
       MaterialPageRoute<void>(
         builder: (_) => role == AppRole.driver
             ? const DriverAuthScreen()
-            : _RolePlaceholder(role: role),
-      ),
-    );
-  }
-}
-
-/// Auth and the role home screens land here in US2 (driver) and US3 (resident).
-class _RolePlaceholder extends StatelessWidget {
-  const _RolePlaceholder({required this.role});
-
-  final AppRole role;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
-    final base = Theme.of(context);
-    final theme = role == AppRole.driver ? applyDriverScale(base) : base;
-
-    return Theme(
-      data: theme,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            role == AppRole.driver ? l10n.driverHomeTitle : l10n.residentHomeTitle,
-          ),
-        ),
-        body: Center(
-          child: Text(
-            role == AppRole.driver ? l10n.driverHomeTitle : l10n.residentHomeTitle,
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
+            : const ResidentAuthScreen(),
       ),
     );
   }

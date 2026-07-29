@@ -63,6 +63,13 @@ class Api {
     await _dio.post<void>('/notifications/devices', data: {'fcmToken': fcmToken});
   }
 
+  Future<void> updateSettings({int? notificationRadiusM, String? locale}) async {
+    await _dio.patch<void>(
+      '/resident/settings',
+      data: {'notificationRadiusM': ?notificationRadiusM, 'locale': ?locale},
+    );
+  }
+
   Future<Map<String, dynamic>> residentHome() async {
     final response = await _dio.get<Map<String, dynamic>>('/resident/home');
     return response.data!;
@@ -111,6 +118,12 @@ class Api {
 
   Future<void> rateToday(int stars, {String? comment}) async {
     await _dio.post<void>('/resident/ratings', data: {'stars': stars, 'comment': ?comment});
+  }
+
+  Future<Map<String, dynamic>> mqttToken(String tripId) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/driver/trips/$tripId/mqtt-token');
+    return response.data!;
   }
 
   Future<Map<String, dynamic>> presignTripMedia(String tripId) async {

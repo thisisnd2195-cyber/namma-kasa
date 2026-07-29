@@ -34,10 +34,19 @@ services:
   emqx:
     image: emqx/emqx:5.8
     environment:
-      # Local development only. Production authenticates devices with the
-      # driver's access token and restricts publish to their own trip topic;
-      # see contracts/realtime.md.
-      EMQX_ALLOW_ANONYMOUS: "true"
+      # Devices authenticate with a per-trip JWT whose `acl` claim grants
+      # publish to exactly one trip topic (contracts/realtime.md §1). The
+      # secret matches the API's JWT_SECRET so no key distribution is needed.
+      EMQX_ALLOW_ANONYMOUS: "false"
+      EMQX_AUTHENTICATION__1__MECHANISM: password_based
+      EMQX_AUTHENTICATION__1__BACKEND: built_in_database
+      EMQX_AUTHENTICATION__2__MECHANISM: jwt
+      EMQX_AUTHENTICATION__2__FROM: password
+      EMQX_AUTHENTICATION__2__USE_JWKS: "false"
+      EMQX_AUTHENTICATION__2__ALGORITHM: "hmac-based"
+      EMQX_AUTHENTICATION__2__SECRET: ${JWT_SECRET:-dev-only-change-me}
+      EMQX_AUTHORIZATION__NO_MATCH: deny
+      EMQX_AUTHORIZATION__SOURCES__1__TYPE: built_in_database
       EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-devpassword}
     ports:
       - "${MQTT_PORT:-1883}:1883"

@@ -31,6 +31,12 @@ interface Conflict {
   geometry: Area | null;
 }
 
+/** What reshaping a boundary would strand, shown before the save (CHK017). */
+interface EditImpact {
+  affectedHouseholds: number;
+  routesOutsideNewBoundary: number;
+}
+
 export default function WardsPage() {
   const [wards, setWards] = useState<Ward[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
@@ -42,6 +48,7 @@ export default function WardsPage() {
   const [wardCode, setWardCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [impact, setImpact] = useState<EditImpact | null>(null);
 
   const load = useCallback(async () => {
     const [w, o] = await Promise.all([
@@ -91,6 +98,46 @@ export default function WardsPage() {
       await load();
     } catch (err) {
       // Boundary clashes come back as a problem+json with the overlap geometry.
+      const problem = err as Error & { conflict?: Area };
+      setConflict({ message: problem.message, geometry: problem.conflict ?? null });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Reshaping a ward can leave households outside the routes that serve them,
+   * which silently stops their alerts. The admin sees the count first.
+   */
+  async function checkImpact() {
+    if (!selected || !drawn) return;
+    setError(null);
+    try {
+      setImpact(
+        await api<EditImpact>(`/admin/wards/${selected.id}/edit-impact`, {
+          method: "POST",
+          body: JSON.stringify(drawn),
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not check impact");
+    }
+  }
+
+  async function saveBoundary() {
+    if (!selected || !drawn) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/admin/wards/${selected.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ boundary: drawn }),
+      });
+      setImpact(null);
+      setDrawn(null);
+      setSelected(null);
+      await load();
+    } catch (err) {
       const problem = err as Error & { conflict?: Area };
       setConflict({ message: problem.message, geometry: problem.conflict ?? null });
     } finally {
@@ -191,6 +238,49 @@ export default function WardsPage() {
               Create ward
             </button>
           </form>
+
+          {selected && drawn && (
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4">
+              <h2 className="text-[length:var(--text-title)] font-medium">
+                Reshape {selected.wardCode}
+              </h2>
+              <p className="mt-1 text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
+                Check what the new boundary would strand before saving it.
+              </p>
+              {impact && (
+                <div
+                  className={`mt-3 rounded-[var(--radius-input)] px-3 py-2 text-[length:var(--text-body)] ${
+                    impact.affectedHouseholds + impact.routesOutsideNewBoundary > 0
+                      ? "bg-[var(--color-warning-container)] text-[#7a5300]"
+                      : "bg-[var(--color-success-container)] text-[var(--color-success)]"
+                  }`}
+                >
+                  {impact.affectedHouseholds} household(s) would fall outside this ward and{" "}
+                  {impact.routesOutsideNewBoundary} route(s) would no longer fit inside it.
+                  {impact.affectedHouseholds > 0 &&
+                    " Affected households return to the review queue."}
+                </div>
+              )}
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void checkImpact()}
+                  className="rounded-full border border-[var(--color-outline)] px-4 py-2 text-[length:var(--text-body)] hover:bg-[var(--color-surface-alt)]"
+                >
+                  Check impact
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || !impact}
+                  onClick={() => void saveBoundary()}
+                  className="rounded-full bg-[var(--color-primary)] px-4 py-2 text-[length:var(--text-body)] font-medium text-white hover:bg-[var(--color-primary-pressed)] disabled:opacity-60"
+                  title={impact ? undefined : "Check the impact first"}
+                >
+                  Save new boundary
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
             <h2 className="border-b border-[var(--color-outline)] px-4 py-3 text-[length:var(--text-title)] font-medium">

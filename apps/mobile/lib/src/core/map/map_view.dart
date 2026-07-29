@@ -22,12 +22,17 @@ class MapView extends StatefulWidget {
     this.zoom = 14,
     this.markers = const [],
     this.onMapReady,
+    this.onCentreChanged,
   });
 
   final LatLng centre;
   final double zoom;
   final List<MapMarker> markers;
   final ValueChanged<MapController>? onMapReady;
+
+  /// Fires as the map settles. Pin-drop uses a fixed crosshair over a moving
+  /// map, so the "pin" is simply wherever the camera has come to rest.
+  final ValueChanged<LatLng>? onCentreChanged;
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -103,6 +108,10 @@ class _MapViewState extends State<MapView> {
         widget.onMapReady?.call(MapController(controller));
       },
       onStyleLoadedCallback: _syncMarkers,
+      onCameraIdle: () {
+        final centre = _controller?.cameraPosition?.target;
+        if (centre != null) widget.onCentreChanged?.call(centre);
+      },
       myLocationEnabled: false,
       compassEnabled: false,
     );

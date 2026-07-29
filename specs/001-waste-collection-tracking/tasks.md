@@ -193,20 +193,35 @@ implement pass. The backend is substantially complete and verified; the gaps are
 concentrated in the Flutter app, where several screens and services were built
 but never wired into anything a user can reach.
 
-- [ ] T062 Add JWT device authentication and per-trip publish ACL to EMQX, replacing `EMQX_ALLOW_ANONYMOUS=true` in `docker-compose.yml`, per contracts/realtime.md §1 (contradicts) — CRITICAL: any client reaching the broker can currently inject pings for any trip
-- [ ] T063 Route residents from `apps/mobile/lib/src/role_chooser.dart` into resident auth and `ResidentHomeScreen` instead of `_RolePlaceholder`, per US3 (missing) — CRITICAL: the entire resident experience is unreachable
-- [ ] T064 Run driver location tracking inside a `flutter_foreground_task` service in `apps/mobile/lib/src/driver/trip_tracker.dart` per FR-DRV-03 (partial) — CRITICAL: tracking currently stops when the screen locks, which is most of a collection round
-- [ ] T065 Build resident onboarding (OTP, consent, pin-drop map) in `apps/mobile/lib/src/resident/onboarding/` per FR-AUTH-07 and FR-AUTH-08 (missing)
-- [ ] T066 Add `firebase_messaging` to `apps/mobile`, register the FCM token on sign-in and handle foreground/background messages per FR-NOTIF-01 (missing) — alerts are queued and sent server-side but no device can receive them
-- [ ] T067 Add a WebSocket client for `/v1/live` in `apps/mobile/lib/src/resident/` with marker interpolation, reconnect backoff and reauth-frame handling per FR-RES-01 (partial) — the app polls every 20 s against a 2 s requirement
-- [ ] T068 Build the OEM battery-optimization and autostart wizard in `apps/mobile/lib/src/driver/` per FR-DRV-04 (missing) — this is the mitigation for the spec's top-listed risk
-- [ ] T069 Add the 30-minute idle confirmation prompt to the driver trip screen per FR-DRV-08 (partial) — only the 45-minute backend force-end exists
-- [ ] T070 Surface `PhotoQueue` capture and upload state in the driver trip screen per FR-DRV-06 (partial) — the queue is implemented but unreachable
-- [ ] T071 Navigate to `FeedbackScreen` from the resident home, including the post-collection rating prompt, per FR-CMP-01 and FR-CMP-05 (partial)
-- [ ] T072 Inject `DegradationService` into `LiveGateway` so the emit cadence and stream pause actually respond to load, per Clarifications CHK043 (partial)
-- [ ] T073 Add a notification-radius control (100–1000 m) to the resident app per FR-RES-05 (missing)
-- [ ] T074 Add `google_sign_in` to the mobile app and wire it to the existing `/auth/login` Google path per FR-AUTH-03 (partial)
-- [ ] T075 Add TalkBack semantics labels and audit touch targets across `apps/mobile/lib/` per NFR-11 (missing) — no `Semantics` widgets exist
-- [ ] T076 Add a ward advisory endpoint that sends `schedule_change` notifications, using the existing `scheduleChangeCopy` template, per FR-NOTIF-04 and Clarifications CHK041 (missing)
-- [ ] T077 Call `/admin/wards/:wardId/edit-impact` from the portal boundary editor and show the affected-household count before saving, per Clarifications CHK017 (partial)
-- [ ] T078 Add tests for `ComplianceService` erasure and retention sweeps in `apps/api/test/` per NFR-04 and Clarifications CHK010/CHK015 (partial)
+- [X] T062 Add JWT device authentication and per-trip publish ACL to EMQX, replacing `EMQX_ALLOW_ANONYMOUS=true` in `docker-compose.yml`, per contracts/realtime.md §1 (contradicts) — CRITICAL: any client reaching the broker can currently inject pings for any trip
+- [X] T063 Route residents from `apps/mobile/lib/src/role_chooser.dart` into resident auth and `ResidentHomeScreen` instead of `_RolePlaceholder`, per US3 (missing) — CRITICAL: the entire resident experience is unreachable
+- [X] T064 Run driver location tracking inside a `flutter_foreground_task` service in `apps/mobile/lib/src/driver/trip_tracker.dart` per FR-DRV-03 (partial) — CRITICAL: tracking currently stops when the screen locks, which is most of a collection round
+- [X] T065 Build resident onboarding (OTP, consent, pin-drop map) in `apps/mobile/lib/src/resident/onboarding/` per FR-AUTH-07 and FR-AUTH-08 (missing)
+- [ ] T066 BLOCKED — needs a Firebase project. Add `firebase_messaging` to `apps/mobile`, register the FCM token on sign-in and handle foreground/background messages per FR-NOTIF-01 (missing) — alerts are queued and sent server-side but no device can receive them
+- [X] T067 Add a WebSocket client for `/v1/live` in `apps/mobile/lib/src/resident/` with marker interpolation, reconnect backoff and reauth-frame handling per FR-RES-01 (partial) — the app polls every 20 s against a 2 s requirement
+- [X] T068 Build the OEM battery-optimization and autostart wizard in `apps/mobile/lib/src/driver/` per FR-DRV-04 (missing) — this is the mitigation for the spec's top-listed risk
+- [X] T069 Add the 30-minute idle confirmation prompt to the driver trip screen per FR-DRV-08 (partial) — only the 45-minute backend force-end exists
+- [X] T070 Surface `PhotoQueue` capture and upload state in the driver trip screen per FR-DRV-06 (partial) — the queue is implemented but unreachable
+- [X] T071 Navigate to `FeedbackScreen` from the resident home, including the post-collection rating prompt, per FR-CMP-01 and FR-CMP-05 (partial)
+- [X] T072 Inject `DegradationService` into `LiveGateway` so the emit cadence and stream pause actually respond to load, per Clarifications CHK043 (partial)
+- [X] T073 Add a notification-radius control (100–1000 m) to the resident app per FR-RES-05 (missing)
+- [ ] T074 BLOCKED — needs OAuth client credentials. Add `google_sign_in` to the mobile app and wire it to the existing `/auth/login` Google path per FR-AUTH-03 (partial)
+- [X] T075 Add TalkBack semantics labels and audit touch targets across `apps/mobile/lib/` per NFR-11 (missing) — no `Semantics` widgets exist
+- [X] T076 Add a ward advisory endpoint that sends `schedule_change` notifications, using the existing `scheduleChangeCopy` template, per FR-NOTIF-04 and Clarifications CHK041 (missing)
+- [X] T077 Call `/admin/wards/:wardId/edit-impact` from the portal boundary editor and show the affected-household count before saving, per Clarifications CHK017 (partial)
+- [X] T078 Add tests for `ComplianceService` erasure and retention sweeps in `apps/api/test/` per NFR-04 and Clarifications CHK010/CHK015 (partial)
+
+### Phase 9 notes
+
+T066 and T074 are the only Phase 9 tasks left open, and both are blocked on
+credentials rather than code: `firebase_messaging` needs a Firebase project and
+`google-services.json`, and `google_sign_in` needs an OAuth client id. Adding
+either package without its config breaks the Android build outright, which is
+worse than the gap. The server side of both is finished — FCM sending, token
+registration, and Google ID-token verification all work — so each is a
+configuration step plus a few lines of client wiring once the credentials exist.
+
+T062 changed the broker from open to closed: devices now authenticate with a
+per-trip JWT whose `acl` claim grants publish to exactly one topic. The
+simulator publishes with anonymous credentials and will need the same token
+flow before it runs again.
