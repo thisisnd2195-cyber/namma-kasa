@@ -251,3 +251,34 @@ old broker. Any future task that edits `docker-compose.yml` should end with
 The local stack is currently left with authentication active and MQTT ingest
 failing. The HTTPS fallback endpoint and all ingest logic are unaffected (13
 tracking tests pass); only the broker path is down.
+
+## Phase 11: Convergence
+
+Third convergence pass. Phase 10 verified clean: the broker config on disk now
+matches the running container, and 97 tests pass from cold including six broker
+tests.
+
+This pass found that Constitution IV has been violated since Phase 2. The
+contract pipeline was built and its drift guard verified, but the OpenAPI
+document only ever contained the five auth routes written that day. Roughly 45
+endpoints added across US1 through US5 never reached it, the generated Dart
+client has been unused since the day it was produced, and both clients
+hand-write the models the principle calls a defect.
+
+- [ ] T084 CRITICAL Import shared Zod-derived types in `apps/web/src/` instead of redeclaring `Ward`, `Route`, `Auto`, `Driver`, `AdminComplaint`, `Operator` and the rest, per Constitution IV (contradicts) — `@namma-kasa/shared` is already a declared dependency and is never imported
+- [ ] T085 CRITICAL Consume the generated client in `apps/mobile/lib/src/core/api.dart` instead of hand-written `Map<String,dynamic>` calls, per Constitution IV (contradicts) — the 20 models in `packages/namma_kasa_api` are imported nowhere
+- [ ] T086 Extend `apps/api/src/openapi/document.ts` to cover every served route — admin geo, fleet, driver, resident, complaints, notifications, compliance — per Constitution IV and contracts/api.md (partial) — the document currently describes 5 of about 50
+- [ ] T087 Make `scripts/check-contracts.sh` fail when a route the app serves is absent from the OpenAPI document, per Constitution IV (partial) — it currently only re-emits the document and diffs it against itself, which is why it stayed green through T086's entire gap
+- [ ] T088 Regenerate the Dart client once T086 lands and commit the result, per plan R2 (partial)
+
+### Phase 11 notes
+
+T087 is the task worth doing first and doing properly. Both of the last two
+convergence passes found a guard that measured itself rather than the system:
+`contracts:check` diffs the document against the generator that produces it, and
+the Phase 9 broker verification read a container that had never loaded the new
+config. A check that cannot observe the thing it certifies will keep reporting
+success through exactly the gap it exists to prevent.
+
+T084 and T085 are ordered after T086 in practice — importing shared types is
+only useful once those types describe the endpoints the clients call.
