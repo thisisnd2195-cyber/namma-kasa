@@ -5,6 +5,13 @@ import { multiPolygonFromGeoJson, pointFromLatLng } from "../src/db/geo";
 import type { Database } from "../src/db/types";
 
 const db = createTestDb();
+
+/**
+ * Fixtures live in their own city: ward uniqueness and the boundary-overlap
+ * check are scoped by city_id, so these boxes cannot collide with seed data.
+ */
+const TEST_CITY = `test-${crypto.randomUUID().slice(0, 8)}`;
+
 afterAll(async () => {
   await db.destroy();
 });
@@ -46,6 +53,7 @@ async function seedWard(trx: Kysely<Database>, area = box(77.58, 12.95, 77.62, 1
     .values({
       operator_id: operator.id,
       name: "Test Ward",
+      city_id: TEST_CITY,
       ward_code: `W-${crypto.randomUUID().slice(0, 8)}`,
       boundary: multiPolygonFromGeoJson(area) as unknown as string,
     })

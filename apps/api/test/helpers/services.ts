@@ -6,6 +6,12 @@ import { OtpService } from "../../src/modules/auth/otp/otp.service";
 import { TokensService } from "../../src/modules/auth/tokens.service";
 import { HouseholdMappingService } from "../../src/modules/geo/household-mapping.service";
 import type { OtpSender } from "../../src/modules/auth/otp/otp-sender";
+import { GeoRepository } from "../../src/modules/geo/geo.repository";
+import { OperatorsService } from "../../src/modules/geo/operators.service";
+import { WardsService } from "../../src/modules/geo/wards.service";
+import { RoutesService } from "../../src/modules/geo/routes.service";
+import { HouseholdsService } from "../../src/modules/geo/households.service";
+import { FleetService } from "../../src/modules/fleet/fleet.service";
 
 const TEST_ENV: Record<string, unknown> = {
   JWT_SECRET: "test-secret-value-long-enough",
@@ -71,3 +77,45 @@ export async function verifiedPhone(
 
 export const randomPhone = (): string =>
   `9198${Math.floor(Math.random() * 90_000_000 + 10_000_000)}`.slice(0, 12);
+
+export function buildAdminStack() {
+  const db = createTestDb();
+  const geo = new GeoRepository(db);
+  return {
+    db,
+    geo,
+    operators: new OperatorsService(db),
+    wards: new WardsService(db, geo),
+    routes: new RoutesService(db, geo),
+    households: new HouseholdsService(db),
+    fleet: new FleetService(db),
+    close: () => db.destroy(),
+  };
+}
+
+/** Axis-aligned box as a GeoJSON Polygon, for readable geo fixtures. */
+export function box(minLng: number, minLat: number, maxLng: number, maxLat: number) {
+  return {
+    type: "Polygon" as const,
+    coordinates: [
+      [
+        [minLng, minLat],
+        [maxLng, minLat],
+        [maxLng, maxLat],
+        [minLng, maxLat],
+        [minLng, minLat],
+      ] as [number, number][],
+    ],
+  };
+}
+
+export const uniqueSuffix = (): string => crypto.randomUUID().slice(0, 8);
+
+export function randomRegistration(): string {
+  const letters = Array.from({ length: 2 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+  ).join("");
+  return `KA${Math.floor(Math.random() * 90 + 10)}${letters}${String(
+    Math.floor(Math.random() * 10_000),
+  ).padStart(4, "0")}`;
+}

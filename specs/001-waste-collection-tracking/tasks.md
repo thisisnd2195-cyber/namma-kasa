@@ -71,13 +71,13 @@ equivalent in capability:
 **Goal**: Operators → wards (import/draw) → ward admins → routes → autos/drivers → assignments.
 **Independent test**: spec US1 acceptance 1–5 via portal against seeded DB (quickstart §2).
 
-- [ ] T017 [P] [US1] Zod contracts for geo + fleet resources in `packages/shared/src/contracts/` (operators, wards incl. GeoJSON boundary, import report, ward-admins, routes incl. waste_type_schedule, autos, drivers, assignments)
-- [ ] T018 [US1] Geo module in `apps/api/src/modules/geo/`: operators CRUD (retirement blocked with active wards), wards CRUD with `ST_Overlaps` 409 + conflict GeoJSON (FR-WARD-05), GeoJSON/KML import with per-feature accept/reject report (FR-WARD-04, CHK018), ward-admin provisioning (FR-WARD-06), ward boundary edit impact-count + household re-flag (CHK017)
-- [ ] T019 [US1] Fleet module in `apps/api/src/modules/fleet/`: autos CRUD (registration regex, status transitions per data-model.md), drivers CRUD (pre-provisioning), assignment endpoints closing previous open row (`effective_from/to`, same-ward checks, FR-FLEET-01..04, CHK022)
-- [ ] T020 [US1] Routes in geo module: CRUD with `ST_Within` ward validation + intra-ward route-overlap rejection (FR-ROUTE-01/05), passes_per_day, waste-type schedule per weekday (FR-ROUTE-03)
+- [X] T017 [P] [US1] Zod contracts for geo + fleet resources in `packages/shared/src/contracts/` (operators, wards incl. GeoJSON boundary, import report, ward-admins, routes incl. waste_type_schedule, autos, drivers, assignments)
+- [X] T018 [US1] Geo module in `apps/api/src/modules/geo/`: operators CRUD (retirement blocked with active wards), wards CRUD with `ST_Overlaps` 409 + conflict GeoJSON (FR-WARD-05), GeoJSON/KML import with per-feature accept/reject report (FR-WARD-04, CHK018), ward-admin provisioning (FR-WARD-06), ward boundary edit impact-count + household re-flag (CHK017)
+- [X] T019 [US1] Fleet module in `apps/api/src/modules/fleet/`: autos CRUD (registration regex, status transitions per data-model.md), drivers CRUD (pre-provisioning), assignment endpoints closing previous open row (`effective_from/to`, same-ward checks, FR-FLEET-01..04, CHK022)
+- [X] T020 [US1] Routes in geo module: CRUD with `ST_Within` ward validation + intra-ward route-overlap rejection (FR-ROUTE-01/05), passes_per_day, waste-type schedule per weekday (FR-ROUTE-03)
 - [ ] T021 [P] [US1] Portal wards pages in `apps/web/src/app/wards/`: list/map, boundary drawing with mapbox-gl-draw, overlap-conflict visualization, GeoJSON/KML import UI with reject report
 - [ ] T022 [P] [US1] Portal routes/fleet pages in `apps/web/src/app/routes/` and `apps/web/src/app/fleet/`: route drawing + schedule editor, auto/driver onboarding forms, assignment screens listing only available same-ward autos, assignment history view
-- [ ] T023 [US1] Integration tests in `apps/api/test/geo-fleet.spec.ts`: US1 acceptance scenarios 1–5 (import, overlap reject, route outside ward, assignment history, ward-scope denial)
+- [X] T023 [US1] Integration tests in `apps/api/test/geo-fleet.spec.ts`: US1 acceptance scenarios 1–5 (import, overlap reject, route outside ward, assignment history, ward-scope denial)
 
 **Checkpoint**: US1 demoable end-to-end via portal.
 

@@ -16,6 +16,9 @@ export class ProblemFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let title = "Internal Server Error";
     let detail: string | undefined;
+    // RFC 9457 extension members, e.g. the conflicting geometry a boundary
+    // clash needs so the portal can draw the overlap.
+    let extensions: Record<string, unknown> = {};
 
     if (exception instanceof ZodError) {
       status = HttpStatus.UNPROCESSABLE_ENTITY;
@@ -28,8 +31,10 @@ export class ProblemFilter implements ExceptionFilter {
       if (typeof body === "string") {
         detail = body;
       } else {
-        const message = (body as { message?: string | string[] }).message;
-        detail = Array.isArray(message) ? message.join("; ") : message;
+        const { message, title: bodyTitle, statusCode, error, ...rest } = body as Record<string, unknown>;
+        detail = Array.isArray(message) ? message.join("; ") : (message as string | undefined);
+        if (typeof bodyTitle === "string") title = bodyTitle;
+        extensions = rest;
       }
     } else if (exception instanceof Error) {
       detail = process.env.NODE_ENV === "production" ? undefined : exception.message;
@@ -44,6 +49,7 @@ export class ProblemFilter implements ExceptionFilter {
         status,
         ...(detail ? { detail } : {}),
         instance: request.originalUrl,
+        ...extensions,
       });
   }
 }

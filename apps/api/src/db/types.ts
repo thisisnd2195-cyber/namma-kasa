@@ -19,6 +19,8 @@ import type {
 } from "@namma-kasa/shared";
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
+/** Nullable timestamp that stays assignable when closing an open row. */
+type NullableTimestamp = ColumnType<Date | null, Date | string | null, Date | string | null>;
 /** PostGIS columns are read as GeoJSON text and written via ST_* expressions. */
 type Geometry = ColumnType<string, string, string>;
 
@@ -29,7 +31,7 @@ export interface OperatorsTable {
   config: Generated<Record<string, unknown>>;
   status: Generated<LifecycleStatus>;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface UsersTable {
@@ -44,7 +46,7 @@ export interface UsersTable {
   consented_at: Timestamp | null;
   deletion_requested_at: Timestamp | null;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface RefreshTokensTable {
@@ -62,7 +64,7 @@ export interface DeviceTokensTable {
   user_id: string;
   fcm_token: string;
   platform: Generated<string>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface WardsTable {
@@ -75,7 +77,7 @@ export interface WardsTable {
   ward_admin_user_id: string | null;
   status: Generated<LifecycleStatus>;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface RoutesTable {
@@ -91,7 +93,7 @@ export interface RoutesTable {
   passes_per_day: Generated<number>;
   waste_type_schedule: Generated<Record<string, string[]>>;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface AutosTable {
@@ -103,7 +105,7 @@ export interface AutosTable {
   status: Generated<AutoStatus>;
   onboarded_by: string | null;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface DriversTable {
@@ -117,7 +119,7 @@ export interface DriversTable {
   emergency_contact: string | null;
   status: Generated<DriverStatus>;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface AutoRouteAssignmentsTable {
@@ -125,8 +127,8 @@ export interface AutoRouteAssignmentsTable {
   auto_id: string;
   route_id: string;
   assigned_by: string | null;
-  effective_from: Generated<Timestamp>;
-  effective_to: Timestamp | null;
+  effective_from: Timestamp;
+  effective_to: NullableTimestamp;
 }
 
 export interface DriverAutoAssignmentsTable {
@@ -134,8 +136,8 @@ export interface DriverAutoAssignmentsTable {
   driver_id: string;
   auto_id: string;
   assigned_by: string | null;
-  effective_from: Generated<Timestamp>;
-  effective_to: Timestamp | null;
+  effective_from: Timestamp;
+  effective_to: NullableTimestamp;
 }
 
 export interface HouseholdsTable {
@@ -150,7 +152,7 @@ export interface HouseholdsTable {
   mapping_status: Generated<MappingStatus>;
   notification_radius_m: Generated<number>;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface TripsTable {
@@ -174,7 +176,7 @@ export interface RoutePassDaysTable {
   pass_number: number;
   status: Generated<PassStatus>;
   trip_id: string | null;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface LocationPingsTable {
@@ -222,7 +224,7 @@ export interface ComplaintsTable {
   sla_due_at: Timestamp | null;
   resolution_note: string | null;
   created_at: Generated<Timestamp>;
-  updated_at: Generated<Timestamp>;
+  updated_at: Timestamp;
 }
 
 export interface ComplaintEventsTable {
