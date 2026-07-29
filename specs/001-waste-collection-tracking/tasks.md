@@ -17,19 +17,36 @@ priority order) → polish. Each story phase ends independently testable per its
 - **[P]**: parallelizable (different files, no dependency on incomplete tasks)
 - **[US#]**: user story label (story phases only)
 
+## Implementation notes (2026-07-29)
+
+Two deviations from the plan, both forced by the local environment and both
+equivalent in capability:
+
+- **T001 uses Colima, not Docker Desktop.** The Docker Desktop cask aborts without an
+  interactive sudo password (it symlinks into `/usr/local/bin`). Colima + the `docker`
+  and `docker-compose` CLIs give the same daemon and Compose API with no privileged
+  helper. Start it with `colima start` before `docker compose up`.
+- **Local Postgres is published on 5433, not 5432**, because this machine already runs a
+  Homebrew `postgresql@16` on 5432. `POSTGRES_PORT` and `DATABASE_URL` in `.env.example`
+  reflect this; the container port is unchanged.
+- **T008 tests run against the Compose database** rather than Testcontainers. The stack is
+  already required for local work, so a second container runtime inside the test process
+  buys nothing; `test/helpers/db.ts` wraps every test in a rolled-back transaction for
+  isolation. Point `TEST_DATABASE_URL` at any throwaway database in CI.
+
 ## Phase 1: Setup (environment + repo restructure per research R13)
 
-- [ ] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
-- [ ] T002 Retire pre-pivot scaffold: delete Expo app contents of `apps/mobile/`, delete `supabase/` (after copying its trigger SQL patterns aside for T007), remove `@supabase/supabase-js` from `packages/shared/package.json`, delete `packages/shared/src/supabase.ts` and Supabase usages in `apps/web/src/`
-- [ ] T003 Create `docker-compose.yml` at repo root: timescaledb-ha (Postgres16+PostGIS+Timescale), Redis, EMQX, MinIO, with healthchecks and a `.env.example`
-- [ ] T004 Scaffold NestJS app in `apps/api/` (strict TS, config module, problem+json error filter per contracts/api.md, pino logging) wired into pnpm workspace + turbo.json
-- [ ] T005 [P] Scaffold Flutter app in `apps/mobile/` (`flutter create`, package `app.nammakasa`, strict analyzer in `analysis_options.yaml`, riverpod + dio + intl EN/KN skeleton, role-based entry shell)
-- [ ] T006 [P] Repurpose `packages/shared/src/` as contract source: base Zod schemas (ids, geo point, enums from data-model.md), remove old report schemas; keep `pnpm typecheck` green
+- [X] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
+- [X] T002 Retire pre-pivot scaffold: delete Expo app contents of `apps/mobile/`, delete `supabase/` (after copying its trigger SQL patterns aside for T007), remove `@supabase/supabase-js` from `packages/shared/package.json`, delete `packages/shared/src/supabase.ts` and Supabase usages in `apps/web/src/`
+- [X] T003 Create `docker-compose.yml` at repo root: timescaledb-ha (Postgres16+PostGIS+Timescale), Redis, EMQX, MinIO, with healthchecks and a `.env.example`
+- [X] T004 Scaffold NestJS app in `apps/api/` (strict TS, config module, problem+json error filter per contracts/api.md, pino logging) wired into pnpm workspace + turbo.json
+- [X] T005 [P] Scaffold Flutter app in `apps/mobile/` (`flutter create`, package `app.nammakasa`, strict analyzer in `analysis_options.yaml`, riverpod + dio + intl EN/KN skeleton, role-based entry shell)
+- [X] T006 [P] Repurpose `packages/shared/src/` as contract source: base Zod schemas (ids, geo point, enums from data-model.md), remove old report schemas; keep `pnpm typecheck` green
 
 ## Phase 2: Foundational (blocks all stories)
 
-- [ ] T007 Write initial migrations in `apps/api/migrations/`: all data-model.md tables (incl. `route_pass_days`, `household_collections`, `audit_log`), enums, PostGIS/Timescale setup, GiST indexes, partial unique indexes (active assignment/trip), ward-overlap + route-within-ward + route-overlap triggers (port patterns from old supabase SQL)
-- [ ] T008 Set up Kysely in `apps/api/src/db/` with generated DB types and a Testcontainers harness in `apps/api/test/` proving migrations apply and triggers fire
+- [X] T007 Write initial migrations in `apps/api/migrations/`: all data-model.md tables (incl. `route_pass_days`, `household_collections`, `audit_log`), enums, PostGIS/Timescale setup, GiST indexes, partial unique indexes (active assignment/trip), ward-overlap + route-within-ward + route-overlap triggers (port patterns from old supabase SQL)
+- [X] T008 Set up Kysely in `apps/api/src/db/` with generated DB types and a Testcontainers harness in `apps/api/test/` proving migrations apply and triggers fire
 - [ ] T009 Auth module in `apps/api/src/modules/auth/`: OTP send/verify (Redis limits per FR-AUTH-02, console sender + MSG91 `OtpSender` interface), register (resident/driver paths, driver pre-provision check FR-AUTH-05), login (password argon2id / Google ID-token), JWT 15-min access + rotating refresh with reuse revocation, driver single-device rule (Clarifications CHK012)
 - [ ] T010 Authorization guards in `apps/api/src/modules/auth/guards/`: role guard + ward-scope guard applied globally to `/v1/admin/*` (FR-WARD-06), audit-log interceptor writing admin mutations to `audit_log` table (Clarifications CHK014)
 - [ ] T011 [P] Contract pipeline: zod-openapi emitter in `apps/api/src/openapi/`, `scripts/generate-dart-client.sh` (openapi-generator dart-dio → `apps/mobile/lib/src/api/`), and `pnpm contracts:check` drift gate wired into turbo

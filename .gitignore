@@ -20,3 +20,8 @@ supabase/.temp/
 # misc
 .DS_Store
 *.log
+
+# Dart/Flutter
+.dart_tool/
+.flutter-plugins-dependencies
+*.iml

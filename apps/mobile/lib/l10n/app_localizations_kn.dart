@@ -1,0 +1,62 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Kannada (`kn`).
+class L10nKn extends L10n {
+  L10nKn([String locale = 'kn']) : super(locale);
+
+  @override
+  String get appTitle => 'ನಮ್ಮ ಕಸ';
+
+  @override
+  String get roleChooserPrompt => 'ನೀವು ಹೇಗೆ ಸೈನ್ ಇನ್ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?';
+
+  @override
+  String get loginAsResident => 'ನಿವಾಸಿಯಾಗಿ ಲಾಗಿನ್';
+
+  @override
+  String get loginAsDriver => 'ಚಾಲಕರಾಗಿ ಲಾಗಿನ್';
+
+  @override
+  String get residentHomeTitle => 'ನಿಮ್ಮ ಸಂಗ್ರಹಣೆ';
+
+  @override
+  String get driverHomeTitle => 'ನಿಮ್ಮ ಮಾರ್ಗ';
+
+  @override
+  String get noActiveTrip => 'ಸದ್ಯಕ್ಕೆ ನಿಮ್ಮ ಮಾರ್ಗದಲ್ಲಿ ಆಟೋ ಇಲ್ಲ';
+
+  @override
+  String nextCollection(String window) {
+    return 'ಮುಂದಿನ ಸಂಗ್ರಹಣೆ: $window';
+  }
+
+  @override
+  String passProgress(int current, int total) {
+    return '$total ರಲ್ಲಿ $current ನೇ ಸುತ್ತು';
+  }
+
+  @override
+  String lastCollected(String when) {
+    return 'ಕೊನೆಯ ಸಂಗ್ರಹಣೆ $when';
+  }
+
+  @override
+  String get startTrip => 'ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸಿ';
+
+  @override
+  String get endTrip => 'ಪ್ರಯಾಣ ಮುಗಿಸಿ';
+
+  @override
+  String get trackingActive => 'ಸ್ಥಳ ಹಂಚಿಕೊಳ್ಳಲಾಗುತ್ತಿದೆ';
+
+  @override
+  String get pendingReview => 'ನಿಮ್ಮ ಮಾರ್ಗವನ್ನು ದೃಢೀಕರಿಸಲಾಗುತ್ತಿದೆ';
+
+  @override
+  String get backendUnavailable =>
+      'ಲೈವ್ ಟ್ರ್ಯಾಕಿಂಗ್ ಲಭ್ಯವಿಲ್ಲ. ಮರುಪ್ರಯತ್ನಿಸಲಾಗುತ್ತಿದೆ…';
+}

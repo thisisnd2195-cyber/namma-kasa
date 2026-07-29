@@ -1,0 +1,35 @@
+name: namma_kasa
+description: Live tracking of door-to-door waste collection in Bengaluru.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State + networking
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+
+  # Token storage
+  flutter_secure_storage: ^9.2.2
+
+  # Maps. Tile URL is configurable and never public osm.org (DS-06, research R10).
+  maplibre_gl: ^0.21.0
+
+  # EN + KN are both first-class (FR-RES-06)
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true

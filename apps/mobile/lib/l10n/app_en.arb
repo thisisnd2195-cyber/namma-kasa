@@ -1,0 +1,30 @@
+{
+  "@@locale": "en",
+  "appTitle": "Namma Kasa",
+  "roleChooserPrompt": "How do you want to sign in?",
+  "loginAsResident": "Login as Resident",
+  "loginAsDriver": "Login as Driver",
+  "residentHomeTitle": "Your collection",
+  "driverHomeTitle": "Your route",
+  "noActiveTrip": "No auto on your route right now",
+  "nextCollection": "Next collection: {window}",
+  "@nextCollection": {
+    "placeholders": { "window": { "type": "String" } }
+  },
+  "passProgress": "Pass {current} of {total}",
+  "@passProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "lastCollected": "Last collected {when}",
+  "@lastCollected": {
+    "placeholders": { "when": { "type": "String" } }
+  },
+  "startTrip": "Start trip",
+  "endTrip": "End trip",
+  "trackingActive": "Sharing location",
+  "pendingReview": "We are confirming your route",
+  "backendUnavailable": "Live tracking unavailable. Retrying…"
+}

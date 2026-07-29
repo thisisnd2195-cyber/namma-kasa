@@ -1,0 +1,18 @@
+{
+  "@@locale": "kn",
+  "appTitle": "ನಮ್ಮ ಕಸ",
+  "roleChooserPrompt": "ನೀವು ಹೇಗೆ ಸೈನ್ ಇನ್ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?",
+  "loginAsResident": "ನಿವಾಸಿಯಾಗಿ ಲಾಗಿನ್",
+  "loginAsDriver": "ಚಾಲಕರಾಗಿ ಲಾಗಿನ್",
+  "residentHomeTitle": "ನಿಮ್ಮ ಸಂಗ್ರಹಣೆ",
+  "driverHomeTitle": "ನಿಮ್ಮ ಮಾರ್ಗ",
+  "noActiveTrip": "ಸದ್ಯಕ್ಕೆ ನಿಮ್ಮ ಮಾರ್ಗದಲ್ಲಿ ಆಟೋ ಇಲ್ಲ",
+  "nextCollection": "ಮುಂದಿನ ಸಂಗ್ರಹಣೆ: {window}",
+  "passProgress": "{total} ರಲ್ಲಿ {current} ನೇ ಸುತ್ತು",
+  "lastCollected": "ಕೊನೆಯ ಸಂಗ್ರಹಣೆ {when}",
+  "startTrip": "ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸಿ",
+  "endTrip": "ಪ್ರಯಾಣ ಮುಗಿಸಿ",
+  "trackingActive": "ಸ್ಥಳ ಹಂಚಿಕೊಳ್ಳಲಾಗುತ್ತಿದೆ",
+  "pendingReview": "ನಿಮ್ಮ ಮಾರ್ಗವನ್ನು ದೃಢೀಕರಿಸಲಾಗುತ್ತಿದೆ",
+  "backendUnavailable": "ಲೈವ್ ಟ್ರ್ಯಾಕಿಂಗ್ ಲಭ್ಯವಿಲ್ಲ. ಮರುಪ್ರಯತ್ನಿಸಲಾಗುತ್ತಿದೆ…"
+}
