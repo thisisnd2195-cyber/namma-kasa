@@ -1,16 +1,34 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// Our ApiException (api_client.dart) carries the problem+json detail; the
+// generated one is unused.
+import 'package:namma_kasa_api/api.dart' hide ApiException;
 
 import 'api_client.dart';
 import 'session.dart';
 
-/// Thin typed calls over the shared Dio client. The generated package in
-/// packages/namma_kasa_api mirrors the same contract; these wrappers exist so
-/// screens deal in plain maps rather than a generated client's ceremony.
+/// Typed calls against the API.
+///
+/// Models come from `packages/namma_kasa_api`, generated from
+/// `contracts/openapi.json`. The constitution treats a hand-written client
+/// model as a defect, and `pnpm contracts:coverage` fails the build if an
+/// endpoint is served without appearing in that document.
+///
+/// Transport stays on Dio rather than the generated client's own `http`
+/// client, because the interceptor that silently rotates the 15-minute access
+/// token lives there; screens would otherwise each have to handle expiry.
 class Api {
   Api(this._dio);
 
   final Dio _dio;
+
+  T _decode<T>(Response<Map<String, dynamic>> response, T? Function(dynamic) fromJson) {
+    final value = fromJson(response.data);
+    if (value == null) {
+      throw ApiException(response.statusCode, 'Server returned an unexpected shape');
+    }
+    return value;
+  }
 
   Future<int> sendOtp(String phone) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -44,7 +62,7 @@ class Api {
         'deviceId': deviceId,
       },
     );
-    return _toSession(response.data!);
+    return _toSession(response);
   }
 
   Future<Session> login({
@@ -56,7 +74,7 @@ class Api {
       '/auth/login',
       data: {'phone': phone, 'password': password, 'deviceId': deviceId},
     );
-    return _toSession(response.data!);
+    return _toSession(response);
   }
 
   Future<void> registerDeviceToken(String fcmToken) async {
@@ -70,9 +88,9 @@ class Api {
     );
   }
 
-  Future<Map<String, dynamic>> residentHome() async {
+  Future<ResidentHome> residentHome() async {
     final response = await _dio.get<Map<String, dynamic>>('/resident/home');
-    return response.data!;
+    return _decode(response, ResidentHome.fromJson);
   }
 
   Future<Session> registerResident({
@@ -101,12 +119,15 @@ class Api {
         },
       },
     );
-    return _toSession(response.data!);
+    return _toSession(response);
   }
 
-  Future<List<Map<String, dynamic>>> myComplaints() async {
+  Future<List<Complaint>> myComplaints() async {
     final response = await _dio.get<List<dynamic>>('/resident/complaints');
-    return (response.data ?? []).cast<Map<String, dynamic>>();
+    return (response.data ?? [])
+        .map<Complaint?>(Complaint.fromJson)
+        .whereType<Complaint>()
+        .toList();
   }
 
   Future<void> createComplaint({required String category, String? description}) async {
@@ -154,17 +175,17 @@ class Api {
     );
   }
 
-  Future<Map<String, dynamic>> driverAssignment() async {
+  Future<DriverAssignment> driverAssignment() async {
     final response = await _dio.get<Map<String, dynamic>>('/driver/assignment');
-    return response.data!;
+    return _decode(response, DriverAssignment.fromJson);
   }
 
-  Future<Map<String, dynamic>> startTrip(int passNumber) async {
+  Future<Trip> startTrip(int passNumber) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/driver/trips',
       data: {'passNumber': passNumber},
     );
-    return response.data!;
+    return _decode(response, Trip.fromJson);
   }
 
   Future<void> endTrip(String tripId, {int? distanceCoveredM}) async {
@@ -182,15 +203,15 @@ class Api {
     );
   }
 
-  Session _toSession(Map<String, dynamic> body) {
-    final user = body['user'] as Map<String, dynamic>;
+  Session _toSession(Response<Map<String, dynamic>> response) {
+    final tokens = _decode(response, AuthTokens.fromJson);
     return Session(
-      accessToken: body['accessToken'] as String,
-      refreshToken: body['refreshToken'] as String,
-      userId: user['id'] as String,
-      role: user['role'] as String,
-      locale: user['locale'] as String? ?? 'en',
-      wardId: user['wardId'] as String?,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      userId: tokens.user.id,
+      role: tokens.user.role.toString(),
+      locale: tokens.user.locale.toString(),
+      wardId: tokens.user.wardId,
     );
   }
 }

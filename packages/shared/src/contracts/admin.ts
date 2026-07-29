@@ -242,4 +242,9 @@ export const reviewQueueItemSchema = z.object({
   aging: z.boolean(),
 });
 
+export type ReviewQueueItem = z.infer<typeof reviewQueueItemSchema>;
+export type WardEditImpact = z.infer<typeof wardEditImpactSchema>;
+export type AutoRouteAssignment = z.infer<typeof autoRouteAssignmentSchema>;
+export type DriverAutoAssignment = z.infer<typeof driverAutoAssignmentSchema>;
+
 export const assignHouseholdRouteSchema = z.object({ routeId: uuidSchema });

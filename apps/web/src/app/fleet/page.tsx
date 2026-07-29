@@ -3,29 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner, Field } from "@/app/wards/page";
+import type { Auto, Driver, Route } from "@namma-kasa/shared";
 import { api, readSession } from "@/lib/session";
-
-interface Auto {
-  id: string;
-  registrationNumber: string;
-  capacityKg: number | null;
-  status: "available" | "assigned" | "maintenance" | "retired";
-}
-
-interface Driver {
-  id: string;
-  fullName: string;
-  phone: string;
-  licenseNumber: string;
-  status: string;
-  hasAccount: boolean;
-}
-
-interface Route {
-  id: string;
-  name: string;
-  routeCode: string;
-}
 
 interface AssignmentRow {
   id: string;

@@ -4,29 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { AreaMap, type Area } from "@/components/AreaMap";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner, Field } from "@/app/wards/page";
+import type { Route, Ward } from "@namma-kasa/shared";
 import { api, readSession } from "@/lib/session";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WASTE_TYPES = ["wet", "dry", "sanitary", "hazardous", "ewaste"] as const;
-
-interface Ward {
-  id: string;
-  name: string;
-  wardCode: string;
-  boundary: Area;
-}
-
-interface Route {
-  id: string;
-  name: string;
-  routeCode: string;
-  serviceableArea: Area;
-  collectionDays: number[];
-  windowStart: string;
-  windowEnd: string;
-  passesPerDay: number;
-  wasteTypeSchedule: Record<string, string[]>;
-}
 
 export default function RoutesPage() {
   const [wards, setWards] = useState<Ward[]>([]);

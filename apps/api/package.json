@@ -14,7 +14,9 @@
     "seed": "tsx scripts/seed.ts",
     "openapi": "tsx src/openapi/emit.ts",
     "simulate-trip": "tsx scripts/simulate-trip.ts",
-    "load-test": "tsx scripts/load-test.ts"
+    "load-test": "tsx scripts/load-test.ts",
+    "routes": "tsx scripts/list-routes.ts",
+    "contracts:coverage": "tsx scripts/check-coverage.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1096.0",

@@ -48,6 +48,8 @@ export const adminComplaintSchema = complaintSchema.extend({
   }),
 });
 
+export type AdminComplaint = z.infer<typeof adminComplaintSchema>;
+
 export const updateComplaintSchema = z.object({
   status: complaintStatusSchema,
   resolutionNote: z.string().trim().max(2000).optional(),

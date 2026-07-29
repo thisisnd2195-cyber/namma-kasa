@@ -3,23 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner } from "@/app/wards/page";
+import type { ReviewQueueItem, Route } from "@namma-kasa/shared";
 import { api, readSession } from "@/lib/session";
 
-interface QueueItem {
-  id: string;
-  fullName: string;
-  addressLine: string;
-  landmark: string | null;
-  pin: { lat: number; lng: number };
-  createdAt: string;
-  aging: boolean;
-}
-
-interface Route {
-  id: string;
-  name: string;
-  routeCode: string;
-}
+/** Dates cross the wire as ISO strings; Zod infers them as Date. */
+type QueueItem = Omit<ReviewQueueItem, "createdAt"> & { createdAt: string };
 
 /**
  * Households whose pin fell outside every route. Left alone they never receive

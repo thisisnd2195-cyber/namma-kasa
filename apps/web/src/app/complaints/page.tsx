@@ -3,21 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner } from "@/app/wards/page";
+import type { AdminComplaint, ComplaintStatus } from "@namma-kasa/shared";
 import { api } from "@/lib/session";
 
-type Status = "open" | "in_review" | "resolved" | "rejected";
-
-interface AdminComplaint {
-  id: string;
-  category: string;
-  description: string | null;
-  mediaUrls: string[];
-  status: Status;
+/** Dates cross the wire as ISO strings; Zod infers them as Date. */
+type WireComplaint = Omit<AdminComplaint, "createdAt" | "slaDueAt" | "evidence"> & {
   createdAt: string;
-  resolutionNote: string | null;
-  household: { id: string; fullName: string; addressLine: string };
+  slaDueAt: string | null;
   evidence: { servedOnComplaintDay: boolean; lastCollectedAt: string | null };
-}
+};
+
+type Status = ComplaintStatus;
 
 const NEXT_STATUS: Record<Status, Status[]> = {
   open: ["in_review", "resolved", "rejected"],
@@ -34,14 +30,14 @@ const STATUS_TONE: Record<Status, string> = {
 };
 
 export default function ComplaintsPage() {
-  const [complaints, setComplaints] = useState<AdminComplaint[]>([]);
+  const [complaints, setComplaints] = useState<WireComplaint[]>([]);
   const [filter, setFilter] = useState<Status | "all">("open");
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const query = filter === "all" ? "" : `?status=${filter}`;
-    setComplaints(await api<AdminComplaint[]>(`/admin/complaints${query}`));
+    setComplaints(await api<WireComplaint[]>(`/admin/complaints${query}`));
   }, [filter]);
 
   useEffect(() => {

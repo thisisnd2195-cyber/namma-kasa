@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
 import '../core/api_client.dart';
+import 'package:namma_kasa_api/api.dart' hide ApiException;
+
 import '../core/theme.dart';
 
 const _categories = <String, String>{
@@ -33,7 +35,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   bool _busy = false;
   String? _error;
   String? _notice;
-  List<Map<String, dynamic>> _complaints = const [];
+  List<Complaint> _complaints = const [];
 
   @override
   void initState() {
@@ -174,18 +176,18 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _categories[complaint['category']] ?? complaint['category'] as String,
+                      _categories[complaint.category.toString()] ?? complaint.category.toString(),
                       style: theme.textTheme.bodyMedium,
                     ),
                     Text(
-                      (complaint['status'] as String).replaceAll('_', ' '),
+                      complaint.status.toString().replaceAll('_', ' '),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (complaint['resolutionNote'] != null)
+                    if (complaint.resolutionNote != null)
                       Text(
-                        complaint['resolutionNote'] as String,
+                        complaint.resolutionNote!,
                         style: theme.textTheme.bodyMedium,
                       ),
                   ],

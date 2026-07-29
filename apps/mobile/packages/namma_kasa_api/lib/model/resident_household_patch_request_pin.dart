@@ -10,9 +10,9 @@
 
 part of openapi.api;
 
-class RegisterRequestOneOfProfilePin {
-  /// Returns a new [RegisterRequestOneOfProfilePin] instance.
-  RegisterRequestOneOfProfilePin({
+class ResidentHouseholdPatchRequestPin {
+  /// Returns a new [ResidentHouseholdPatchRequestPin] instance.
+  ResidentHouseholdPatchRequestPin({
     required this.lat,
     required this.lng,
   });
@@ -26,7 +26,7 @@ class RegisterRequestOneOfProfilePin {
   num lng;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RegisterRequestOneOfProfilePin &&
+  bool operator ==(Object other) => identical(this, other) || other is ResidentHouseholdPatchRequestPin &&
     other.lat == lat &&
     other.lng == lng;
 
@@ -37,7 +37,7 @@ class RegisterRequestOneOfProfilePin {
     (lng.hashCode);
 
   @override
-  String toString() => 'RegisterRequestOneOfProfilePin[lat=$lat, lng=$lng]';
+  String toString() => 'ResidentHouseholdPatchRequestPin[lat=$lat, lng=$lng]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -46,10 +46,10 @@ class RegisterRequestOneOfProfilePin {
     return json;
   }
 
-  /// Returns a new [RegisterRequestOneOfProfilePin] instance and imports its values from
+  /// Returns a new [ResidentHouseholdPatchRequestPin] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
-  static RegisterRequestOneOfProfilePin? fromJson(dynamic value) {
+  static ResidentHouseholdPatchRequestPin? fromJson(dynamic value) {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
@@ -57,14 +57,14 @@ class RegisterRequestOneOfProfilePin {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'lat'), 'Required key "RegisterRequestOneOfProfilePin[lat]" is missing from JSON.');
-        assert(json[r'lat'] != null, 'Required key "RegisterRequestOneOfProfilePin[lat]" has a null value in JSON.');
-        assert(json.containsKey(r'lng'), 'Required key "RegisterRequestOneOfProfilePin[lng]" is missing from JSON.');
-        assert(json[r'lng'] != null, 'Required key "RegisterRequestOneOfProfilePin[lng]" has a null value in JSON.');
+        assert(json.containsKey(r'lat'), 'Required key "ResidentHouseholdPatchRequestPin[lat]" is missing from JSON.');
+        assert(json[r'lat'] != null, 'Required key "ResidentHouseholdPatchRequestPin[lat]" has a null value in JSON.');
+        assert(json.containsKey(r'lng'), 'Required key "ResidentHouseholdPatchRequestPin[lng]" is missing from JSON.');
+        assert(json[r'lng'] != null, 'Required key "ResidentHouseholdPatchRequestPin[lng]" has a null value in JSON.');
         return true;
       }());
 
-      return RegisterRequestOneOfProfilePin(
+      return ResidentHouseholdPatchRequestPin(
         lat: num.parse('${json[r'lat']}'),
         lng: num.parse('${json[r'lng']}'),
       );
@@ -72,11 +72,11 @@ class RegisterRequestOneOfProfilePin {
     return null;
   }
 
-  static List<RegisterRequestOneOfProfilePin> listFromJson(dynamic json, {bool growable = false,}) {
-    final result = <RegisterRequestOneOfProfilePin>[];
+  static List<ResidentHouseholdPatchRequestPin> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <ResidentHouseholdPatchRequestPin>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
-        final value = RegisterRequestOneOfProfilePin.fromJson(row);
+        final value = ResidentHouseholdPatchRequestPin.fromJson(row);
         if (value != null) {
           result.add(value);
         }
@@ -85,12 +85,12 @@ class RegisterRequestOneOfProfilePin {
     return result.toList(growable: growable);
   }
 
-  static Map<String, RegisterRequestOneOfProfilePin> mapFromJson(dynamic json) {
-    final map = <String, RegisterRequestOneOfProfilePin>{};
+  static Map<String, ResidentHouseholdPatchRequestPin> mapFromJson(dynamic json) {
+    final map = <String, ResidentHouseholdPatchRequestPin>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>(); // ignore: parameter_assignments
       for (final entry in json.entries) {
-        final value = RegisterRequestOneOfProfilePin.fromJson(entry.value);
+        final value = ResidentHouseholdPatchRequestPin.fromJson(entry.value);
         if (value != null) {
           map[entry.key] = value;
         }
@@ -99,14 +99,14 @@ class RegisterRequestOneOfProfilePin {
     return map;
   }
 
-  // maps a json object with a list of RegisterRequestOneOfProfilePin-objects as value to a dart map
-  static Map<String, List<RegisterRequestOneOfProfilePin>> mapListFromJson(dynamic json, {bool growable = false,}) {
-    final map = <String, List<RegisterRequestOneOfProfilePin>>{};
+  // maps a json object with a list of ResidentHouseholdPatchRequestPin-objects as value to a dart map
+  static Map<String, List<ResidentHouseholdPatchRequestPin>> mapListFromJson(dynamic json, {bool growable = false,}) {
+    final map = <String, List<ResidentHouseholdPatchRequestPin>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = RegisterRequestOneOfProfilePin.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = ResidentHouseholdPatchRequestPin.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;

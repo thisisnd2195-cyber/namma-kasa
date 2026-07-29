@@ -3,27 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { AreaMap, type Area } from "@/components/AreaMap";
 import { PortalShell } from "@/components/PortalShell";
+import type { ImportReport, Operator, Ward, WardEditImpact } from "@namma-kasa/shared";
 import { api } from "@/lib/session";
-
-interface Ward {
-  id: string;
-  name: string;
-  wardCode: string;
-  boundary: Area;
-  operatorId: string;
-  status: string;
-}
-
-interface Operator {
-  id: string;
-  name: string;
-  wardCount?: number;
-}
-
-interface ImportReport {
-  accepted: { wardCode: string; id: string }[];
-  rejected: { wardCode: string; reason: string }[];
-}
 
 /** A 409 from the API carries the intersection so the clash can be drawn. */
 interface Conflict {
@@ -32,10 +13,7 @@ interface Conflict {
 }
 
 /** What reshaping a boundary would strand, shown before the save (CHK017). */
-interface EditImpact {
-  affectedHouseholds: number;
-  routesOutsideNewBoundary: number;
-}
+type EditImpact = WardEditImpact;
 
 export default function WardsPage() {
   const [wards, setWards] = useState<Ward[]>([]);

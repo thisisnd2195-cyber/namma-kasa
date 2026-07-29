@@ -15,7 +15,7 @@ class RegisterRequest {
   RegisterRequest({
     required this.role,
     required this.verificationToken,
-    required this.credential,
+    this.credential = const {},
     required this.profile,
     required this.deviceId,
   });
@@ -24,9 +24,9 @@ class RegisterRequest {
 
   String verificationToken;
 
-  RegisterRequestOneOfCredential credential;
+  Map<String, Object> credential;
 
-  RegisterRequestOneOf1Profile profile;
+  RegisterRequestAnyOf1Profile profile;
 
   String deviceId;
 
@@ -34,7 +34,7 @@ class RegisterRequest {
   bool operator ==(Object other) => identical(this, other) || other is RegisterRequest &&
     other.role == role &&
     other.verificationToken == verificationToken &&
-    other.credential == credential &&
+    _deepEquality.equals(other.credential, credential) &&
     other.profile == profile &&
     other.deviceId == deviceId;
 
@@ -87,8 +87,8 @@ class RegisterRequest {
       return RegisterRequest(
         role: RegisterRequestRoleEnum.fromJson(json[r'role'])!,
         verificationToken: mapValueOfType<String>(json, r'verificationToken')!,
-        credential: RegisterRequestOneOfCredential.fromJson(json[r'credential'])!,
-        profile: RegisterRequestOneOf1Profile.fromJson(json[r'profile'])!,
+        credential: mapCastOfType<String, Object>(json, r'credential')!,
+        profile: RegisterRequestAnyOf1Profile.fromJson(json[r'profile'])!,
         deviceId: mapValueOfType<String>(json, r'deviceId')!,
       );
     }

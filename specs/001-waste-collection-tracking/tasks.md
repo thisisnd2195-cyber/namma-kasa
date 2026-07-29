@@ -265,11 +265,11 @@ endpoints added across US1 through US5 never reached it, the generated Dart
 client has been unused since the day it was produced, and both clients
 hand-write the models the principle calls a defect.
 
-- [ ] T084 CRITICAL Import shared Zod-derived types in `apps/web/src/` instead of redeclaring `Ward`, `Route`, `Auto`, `Driver`, `AdminComplaint`, `Operator` and the rest, per Constitution IV (contradicts) — `@namma-kasa/shared` is already a declared dependency and is never imported
-- [ ] T085 CRITICAL Consume the generated client in `apps/mobile/lib/src/core/api.dart` instead of hand-written `Map<String,dynamic>` calls, per Constitution IV (contradicts) — the 20 models in `packages/namma_kasa_api` are imported nowhere
-- [ ] T086 Extend `apps/api/src/openapi/document.ts` to cover every served route — admin geo, fleet, driver, resident, complaints, notifications, compliance — per Constitution IV and contracts/api.md (partial) — the document currently describes 5 of about 50
-- [ ] T087 Make `scripts/check-contracts.sh` fail when a route the app serves is absent from the OpenAPI document, per Constitution IV (partial) — it currently only re-emits the document and diffs it against itself, which is why it stayed green through T086's entire gap
-- [ ] T088 Regenerate the Dart client once T086 lands and commit the result, per plan R2 (partial)
+- [X] T084 CRITICAL Import shared Zod-derived types in `apps/web/src/` instead of redeclaring `Ward`, `Route`, `Auto`, `Driver`, `AdminComplaint`, `Operator` and the rest, per Constitution IV (contradicts) — `@namma-kasa/shared` is already a declared dependency and is never imported
+- [X] T085 CRITICAL Consume the generated client in `apps/mobile/lib/src/core/api.dart` instead of hand-written `Map<String,dynamic>` calls, per Constitution IV (contradicts) — the 20 models in `packages/namma_kasa_api` are imported nowhere
+- [X] T086 Extend `apps/api/src/openapi/document.ts` to cover every served route — admin geo, fleet, driver, resident, complaints, notifications, compliance — per Constitution IV and contracts/api.md (partial) — the document currently describes 5 of about 50
+- [X] T087 Make `scripts/check-contracts.sh` fail when a route the app serves is absent from the OpenAPI document, per Constitution IV (partial) — it currently only re-emits the document and diffs it against itself, which is why it stayed green through T086's entire gap
+- [X] T088 Regenerate the Dart client once T086 lands and commit the result, per plan R2 (partial)
 
 ### Phase 11 notes
 
@@ -282,3 +282,23 @@ success through exactly the gap it exists to prevent.
 
 T084 and T085 are ordered after T086 in practice — importing shared types is
 only useful once those types describe the endpoints the clients call.
+
+### Phase 11 notes
+
+The Dart client is generated from a mobile-scoped view of the contract:
+`scripts/generate-dart-client.sh` strips `/admin` paths and their named
+components before generating. The mobile app is a resident and driver client and
+never calls those endpoints; the portal consumes them through the shared Zod
+types instead. The practical trigger was that GeoJSON boundaries carry 4-deep
+coordinate arrays the `dart` generator emits uncompilable code for.
+
+Three schema shapes were relaxed in the published contract while runtime
+validation in `packages/shared` stayed strict, because the generator produces
+uncompilable Dart for each: a record whose values are enum arrays
+(`wasteTypeSchedule`), an enum carrying a default (`mediaType`, `locale`), and
+an array of free-form records (the assignment-history and live-ward responses,
+now given proper schemas instead).
+
+`flutter analyze` excludes the generated package, so none of this surfaced until
+`flutter test` compiled it. Worth remembering: analyze passing says nothing about
+whether generated code builds.

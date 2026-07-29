@@ -8,10 +8,15 @@ import '../../l10n/app_localizations.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/map/map_view.dart';
+import 'package:namma_kasa_api/api.dart' hide ApiException;
+
 import '../core/theme.dart';
 import 'feedback_screen.dart';
 import 'live_stream.dart';
 import 'settings_sheet.dart';
+
+/// Generated name for the shared {lat, lng} object.
+typedef GeoPoint = DriverTripsIdMediaConfirmPostRequestGeo;
 
 /// The screen that answers "when is the auto coming?".
 ///
@@ -26,7 +31,7 @@ class ResidentHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
-  Map<String, dynamic>? _home;
+  ResidentHome? _home;
   String? _error;
   bool _loading = true;
   Timer? _poll;
@@ -51,7 +56,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
       final data = await ref.read(apiProvider).residentHome();
       if (!mounted) return;
       setState(() => _home = data);
-      final routeId = (data['route'] as Map<String, dynamic>?)?['id'] as String?;
+      final routeId = data.route?.id;
       if (routeId != null) await ref.read(liveStreamProvider.notifier).connect(routeId);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -70,12 +75,20 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
     }
 
     final home = _home;
-    final route = home?['route'] as Map<String, dynamic>?;
-    final household = home?['household'] as Map<String, dynamic>?;
-    final pin = household?['pin'] as Map<String, dynamic>?;
+    final route = home?.route;
+    final pin = home?.household.pin;
     // Socket positions win over the polled snapshot: they are newer.
     final live = ref.watch(liveStreamProvider);
-    final polled = (home?['servingAutos'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final polled = (home?.servingAutos ?? [])
+        .map((a) => {
+              'tripId': a.tripId,
+              'registrationNumber': a.registrationNumber,
+              'passNumber': a.passNumber,
+              'lat': a.lat,
+              'lng': a.lng,
+              'distanceM': a.distanceM,
+            })
+        .toList();
     final autos = live.isNotEmpty
         ? live.values
             .map((a) => {
@@ -107,7 +120,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => FeedbackScreen(
-                  canRateToday: (_home?['canRateToday'] as bool?) ?? false,
+                  canRateToday: _home?.canRateToday ?? false,
                 ),
               ),
             ),
@@ -121,15 +134,12 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
             SizedBox(
               height: 280,
               child: MapView(
-                centre: pin == null
-                    ? kBengaluruCentre
-                    : LatLng((pin['lat'] as num).toDouble(), (pin['lng'] as num).toDouble()),
+                centre: pin == null ? kBengaluruCentre : LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
                 markers: [
                   if (pin != null)
                     MapMarker(
                       id: 'home',
-                      position:
-                          LatLng((pin['lat'] as num).toDouble(), (pin['lng'] as num).toDouble()),
+                      position: LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
                       color: Tokens.textSecondary,
                     ),
                   for (final auto in autos)
@@ -167,7 +177,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                           const SizedBox(height: Tokens.space1),
                           Text(
                             l10n.nextCollection(
-                              '${route['windowStart']} – ${route['windowEnd']}',
+                              '${route.windowStart} – ${route.windowEnd}',
                             ),
                             style: theme.textTheme.bodyMedium,
                           ),
@@ -195,7 +205,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                             Text(
                               l10n.passProgress(
                                 auto['passNumber'] as int,
-                                route['passesPerDay'] as int,
+                                route.passesPerDay,
                               ),
                               style: theme.textTheme.bodyMedium,
                             ),
@@ -211,20 +221,20 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                           spacing: Tokens.space2,
                           children: [
                             for (final waste
-                                in (route['todayWasteTypes'] as List<dynamic>).cast<String>())
+                                in route.todayWasteTypes.map((w) => w.toString()))
                               Chip(label: Text(waste), side: BorderSide.none),
                           ],
                         ),
                         const SizedBox(height: Tokens.space2),
                         Text(
-                          '${route['windowStart']} – ${route['windowEnd']}',
+                          '${route.windowStart} – ${route.windowEnd}',
                           style: theme.textTheme.bodyMedium,
                         ),
-                        if (home?['lastCollectedAt'] != null)
+                        if (home?.lastCollectedAt != null)
                           Text(
                             l10n.lastCollected(
                               DateFormat.yMMMd().add_jm().format(
-                                    DateTime.parse(home!['lastCollectedAt'] as String).toLocal(),
+                                    DateTime.parse(home!.lastCollectedAt!).toLocal(),
                                   ),
                             ),
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -244,11 +254,11 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
   }
 
   /// Straight-line metres, good enough to render a distance chip.
-  int _distanceTo(Map<String, dynamic>? pin, double lat, double lng) {
+  int _distanceTo(GeoPoint? pin, double lat, double lng) {
     if (pin == null) return 0;
     const metresPerDegree = 111_320.0;
-    final dLat = (lat - (pin['lat'] as num).toDouble()) * metresPerDegree;
-    final dLng = (lng - (pin['lng'] as num).toDouble()) * metresPerDegree * 0.97;
+    final dLat = (lat - pin.lat.toDouble()) * metresPerDegree;
+    final dLng = (lng - pin.lng.toDouble()) * metresPerDegree * 0.97;
     return (dLat * dLat + dLng * dLng).abs().toInt() == 0
         ? 0
         : (dLat.abs() + dLng.abs()).round();

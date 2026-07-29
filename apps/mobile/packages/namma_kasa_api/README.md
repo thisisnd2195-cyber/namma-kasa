@@ -40,15 +40,20 @@ Please follow the [installation procedure](#installation--usage) and then run th
 ```dart
 import 'package:namma_kasa_api/api.dart';
 
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
 
-final api_instance = AuthApi();
-final loginRequest = LoginRequest(); // LoginRequest | 
+final api_instance = AccountApi();
 
 try {
-    final result = api_instance.authLoginPost(loginRequest);
+    final result = api_instance.meDelete();
     print(result);
 } catch (e) {
-    print('Exception when calling AuthApi->authLoginPost: $e\n');
+    print('Exception when calling AccountApi->meDelete: $e\n');
 }
 
 ```
@@ -59,35 +64,81 @@ All URIs are relative to *http://localhost:4000/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*AccountApi* | [**meDelete**](doc//AccountApi.md#medelete) | **DELETE** /me | Request account deletion; personal data is erased after 30 days
+*AccountApi* | [**meRetentionPolicyGet**](doc//AccountApi.md#meretentionpolicyget) | **GET** /me/retention-policy | How long each kind of data is kept
 *AuthApi* | [**authLoginPost**](doc//AuthApi.md#authloginpost) | **POST** /auth/login | Sign in with password or Google
 *AuthApi* | [**authOtpSendPost**](doc//AuthApi.md#authotpsendpost) | **POST** /auth/otp/send | Send a one-time code to a phone number
 *AuthApi* | [**authOtpVerifyPost**](doc//AuthApi.md#authotpverifypost) | **POST** /auth/otp/verify | Exchange a one-time code for a verification token
 *AuthApi* | [**authRefreshPost**](doc//AuthApi.md#authrefreshpost) | **POST** /auth/refresh | Rotate a refresh token
 *AuthApi* | [**authRegisterPost**](doc//AuthApi.md#authregisterpost) | **POST** /auth/register | Create a resident or driver account
+*DriverApi* | [**driverAssignmentGet**](doc//DriverApi.md#driverassignmentget) | **GET** /driver/assignment | Today's auto, route, waste types and pass progress
+*DriverApi* | [**driverTripsIdEndPatch**](doc//DriverApi.md#drivertripsidendpatch) | **PATCH** /driver/trips/{id}/end | End a trip
+*DriverApi* | [**driverTripsIdMediaConfirmPost**](doc//DriverApi.md#drivertripsidmediaconfirmpost) | **POST** /driver/trips/{id}/media/confirm | Record a photo once its upload succeeded
+*DriverApi* | [**driverTripsIdMediaPresignPost**](doc//DriverApi.md#drivertripsidmediapresignpost) | **POST** /driver/trips/{id}/media/presign | Presigned URL for a collection-proof photo
+*DriverApi* | [**driverTripsIdMqttTokenPost**](doc//DriverApi.md#drivertripsidmqtttokenpost) | **POST** /driver/trips/{id}/mqtt-token | Broker credentials scoped to this trip's topic
+*DriverApi* | [**driverTripsIdPingsPost**](doc//DriverApi.md#drivertripsidpingspost) | **POST** /driver/trips/{id}/pings | HTTPS fallback for position batches when MQTT is unreachable
+*DriverApi* | [**driverTripsPost**](doc//DriverApi.md#drivertripspost) | **POST** /driver/trips | Start a pass
+*NotificationsApi* | [**notificationsDevicesPost**](doc//NotificationsApi.md#notificationsdevicespost) | **POST** /notifications/devices | Register this device for push
+*ResidentApi* | [**residentComplaintsGet**](doc//ResidentApi.md#residentcomplaintsget) | **GET** /resident/complaints | Complaints raised by this household
+*ResidentApi* | [**residentComplaintsPost**](doc//ResidentApi.md#residentcomplaintspost) | **POST** /resident/complaints | Raise a complaint
+*ResidentApi* | [**residentHomeGet**](doc//ResidentApi.md#residenthomeget) | **GET** /resident/home | Route, schedule, serving autos and last collection
+*ResidentApi* | [**residentHouseholdPatch**](doc//ResidentApi.md#residenthouseholdpatch) | **PATCH** /resident/household | Edit house details; moving the pin re-runs route mapping
+*ResidentApi* | [**residentRatingsPost**](doc//ResidentApi.md#residentratingspost) | **POST** /resident/ratings | Rate today's collection, once per day
+*ResidentApi* | [**residentSettingsPatch**](doc//ResidentApi.md#residentsettingspatch) | **PATCH** /resident/settings | Alert radius and language
 
 
 ## Documentation For Models
 
  - [AuthTokens](doc//AuthTokens.md)
  - [AuthTokensUser](doc//AuthTokensUser.md)
+ - [Auto](doc//Auto.md)
+ - [Complaint](doc//Complaint.md)
+ - [ComplaintHistoryInner](doc//ComplaintHistoryInner.md)
+ - [Driver](doc//Driver.md)
+ - [DriverAssignment](doc//DriverAssignment.md)
+ - [DriverAssignmentAuto](doc//DriverAssignmentAuto.md)
+ - [DriverAssignmentRoute](doc//DriverAssignmentRoute.md)
+ - [DriverAssignmentToday](doc//DriverAssignmentToday.md)
+ - [DriverTripsIdEndPatchRequest](doc//DriverTripsIdEndPatchRequest.md)
+ - [DriverTripsIdMediaConfirmPost201Response](doc//DriverTripsIdMediaConfirmPost201Response.md)
+ - [DriverTripsIdMediaConfirmPostRequest](doc//DriverTripsIdMediaConfirmPostRequest.md)
+ - [DriverTripsIdMediaConfirmPostRequestGeo](doc//DriverTripsIdMediaConfirmPostRequestGeo.md)
+ - [DriverTripsIdMediaPresignPost201Response](doc//DriverTripsIdMediaPresignPost201Response.md)
+ - [DriverTripsIdMediaPresignPostRequest](doc//DriverTripsIdMediaPresignPostRequest.md)
+ - [DriverTripsIdMqttTokenPost201Response](doc//DriverTripsIdMqttTokenPost201Response.md)
+ - [DriverTripsIdPingsPost202Response](doc//DriverTripsIdPingsPost202Response.md)
+ - [DriverTripsIdPingsPostRequest](doc//DriverTripsIdPingsPostRequest.md)
+ - [DriverTripsIdPingsPostRequestPingsInner](doc//DriverTripsIdPingsPostRequestPingsInner.md)
+ - [DriverTripsPostRequest](doc//DriverTripsPostRequest.md)
+ - [Household](doc//Household.md)
  - [LoginRequest](doc//LoginRequest.md)
  - [LoginRequestAnyOf](doc//LoginRequestAnyOf.md)
  - [LoginRequestAnyOf1](doc//LoginRequestAnyOf1.md)
+ - [MeDelete202Response](doc//MeDelete202Response.md)
+ - [MeRetentionPolicyGet200Response](doc//MeRetentionPolicyGet200Response.md)
+ - [NotificationsDevicesPostRequest](doc//NotificationsDevicesPostRequest.md)
  - [OtpSendRequest](doc//OtpSendRequest.md)
  - [OtpSendResponse](doc//OtpSendResponse.md)
  - [OtpVerifyRequest](doc//OtpVerifyRequest.md)
  - [OtpVerifyResponse](doc//OtpVerifyResponse.md)
  - [Problem](doc//Problem.md)
+ - [Rating](doc//Rating.md)
  - [RefreshRequest](doc//RefreshRequest.md)
  - [RegisterRequest](doc//RegisterRequest.md)
- - [RegisterRequestOneOf](doc//RegisterRequestOneOf.md)
- - [RegisterRequestOneOf1](doc//RegisterRequestOneOf1.md)
- - [RegisterRequestOneOf1Profile](doc//RegisterRequestOneOf1Profile.md)
- - [RegisterRequestOneOfCredential](doc//RegisterRequestOneOfCredential.md)
- - [RegisterRequestOneOfCredentialAnyOf](doc//RegisterRequestOneOfCredentialAnyOf.md)
- - [RegisterRequestOneOfCredentialAnyOf1](doc//RegisterRequestOneOfCredentialAnyOf1.md)
- - [RegisterRequestOneOfProfile](doc//RegisterRequestOneOfProfile.md)
- - [RegisterRequestOneOfProfilePin](doc//RegisterRequestOneOfProfilePin.md)
+ - [RegisterRequestAnyOf](doc//RegisterRequestAnyOf.md)
+ - [RegisterRequestAnyOf1](doc//RegisterRequestAnyOf1.md)
+ - [RegisterRequestAnyOf1Profile](doc//RegisterRequestAnyOf1Profile.md)
+ - [RegisterRequestAnyOfProfile](doc//RegisterRequestAnyOfProfile.md)
+ - [RegisterRequestAnyOfProfilePin](doc//RegisterRequestAnyOfProfilePin.md)
+ - [ResidentComplaintsPostRequest](doc//ResidentComplaintsPostRequest.md)
+ - [ResidentHome](doc//ResidentHome.md)
+ - [ResidentHomeRoute](doc//ResidentHomeRoute.md)
+ - [ResidentHomeServingAutosInner](doc//ResidentHomeServingAutosInner.md)
+ - [ResidentHouseholdPatchRequest](doc//ResidentHouseholdPatchRequest.md)
+ - [ResidentHouseholdPatchRequestPin](doc//ResidentHouseholdPatchRequestPin.md)
+ - [ResidentRatingsPostRequest](doc//ResidentRatingsPostRequest.md)
+ - [ResidentSettingsPatchRequest](doc//ResidentSettingsPatchRequest.md)
+ - [Trip](doc//Trip.md)
 
 
 ## Documentation For Authorization

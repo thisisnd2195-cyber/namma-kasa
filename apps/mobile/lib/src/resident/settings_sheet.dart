@@ -32,10 +32,9 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
   Future<void> _load() async {
     try {
       final home = await ref.read(apiProvider).residentHome();
-      final household = home['household'] as Map<String, dynamic>;
       if (mounted) {
         setState(() {
-          _radius = (household['notificationRadiusM'] as num).toDouble();
+          _radius = home.household.notificationRadiusM.toDouble();
           _loaded = true;
         });
       }

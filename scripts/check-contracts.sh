@@ -17,4 +17,9 @@ if [ "$BEFORE" != "$AFTER" ]; then
   exit 1
 fi
 
+# Freshness alone is not coverage: the emitter can be perfectly in sync with
+# itself while omitting most of the API. This compares the document to the
+# routes actually served.
+pnpm --filter @namma-kasa/api contracts:coverage
+
 echo "Contract is in sync."

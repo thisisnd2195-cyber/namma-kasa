@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createDocument, type ZodOpenApiPathsObject } from "zod-openapi";
 import {
   authTokensSchema,
@@ -9,7 +10,24 @@ import {
   problemSchema,
   refreshRequestSchema,
   registerRequestSchema,
+  // Named so the generated client gets DriverAssignment rather than
+  // DriverAssignmentGet200Response.
+  adminComplaintSchema,
+  autoSchema,
+  complaintSchema,
+  driverAssignmentSchema,
+  driverSchema,
+  householdSchema,
+  importReportSchema,
+  operatorSchema,
+  ratingSchema,
+  residentHomeSchema,
+  reviewQueueItemSchema,
+  routeSchema,
+  tripSchema,
+  wardSchema,
 } from "@namma-kasa/shared";
+import { apiPaths } from "./paths";
 
 /**
  * The OpenAPI document is derived from the same Zod schemas the runtime
@@ -23,7 +41,31 @@ const problem = {
 
 const json = <T>(schema: T) => ({ content: { "application/json": { schema } } });
 
-const paths: ZodOpenApiPathsObject = {
+/** Locale carries a default; see the note in paths.ts. */
+const openApiRegisterRequest = z.union([
+  z.object({
+    role: z.literal("resident"),
+    verificationToken: z.string(),
+    credential: z.record(z.unknown()),
+    profile: z.object({
+      fullName: z.string(),
+      addressLine: z.string(),
+      landmark: z.string().optional(),
+      pin: z.object({ lat: z.number(), lng: z.number() }),
+      locale: z.enum(["en", "kn"]).optional(),
+      consent: z.boolean(),
+    }),
+  }),
+  z.object({
+    role: z.literal("driver"),
+    verificationToken: z.string(),
+    credential: z.record(z.unknown()),
+    profile: z.object({ locale: z.enum(["en", "kn"]).optional(), consent: z.boolean() }),
+    deviceId: z.string(),
+  }),
+]);
+
+const authPaths: ZodOpenApiPathsObject = {
   "/auth/otp/send": {
     post: {
       tags: ["auth"],
@@ -51,7 +93,7 @@ const paths: ZodOpenApiPathsObject = {
     post: {
       tags: ["auth"],
       summary: "Create a resident or driver account",
-      requestBody: json(registerRequestSchema),
+      requestBody: json(openApiRegisterRequest),
       responses: {
         201: { description: "Account created", ...json(authTokensSchema) },
         403: { description: "Driver number not pre-provisioned", ...problem },
@@ -104,14 +146,37 @@ export function buildOpenApiDocument(): ReturnType<typeof createDocument> {
         OtpSendResponse: otpSendResponseSchema,
         OtpVerifyRequest: otpVerifyRequestSchema,
         OtpVerifyResponse: otpVerifyResponseSchema,
-        RegisterRequest: registerRequestSchema,
+        RegisterRequest: openApiRegisterRequest,
         LoginRequest: loginRequestSchema,
         RefreshRequest: refreshRequestSchema,
+
+        Ward: wardSchema,
+        Route: routeSchema.extend({
+          wasteTypeSchedule: z.record(z.string(), z.array(z.string())),
+        }),
+        Operator: operatorSchema,
+        Auto: autoSchema,
+        Driver: driverSchema,
+        ImportReport: importReportSchema,
+        ReviewQueueItem: reviewQueueItemSchema,
+        DriverAssignment: driverAssignmentSchema,
+        Trip: tripSchema,
+        ResidentHome: residentHomeSchema,
+        Household: householdSchema,
+        Complaint: complaintSchema,
+        AdminComplaint: adminComplaintSchema,
+        Rating: ratingSchema,
       },
       securitySchemes: {
         bearer: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
       },
+      responses: {
+        Problem: {
+          description: "RFC 9457 problem document",
+          content: { "application/problem+json": { schema: problemSchema } },
+        },
+      },
     },
-    paths,
+    paths: { ...authPaths, ...apiPaths },
   });
 }

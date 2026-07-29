@@ -187,12 +187,58 @@ class ApiClient {
           return AuthTokens.fromJson(value);
         case 'AuthTokensUser':
           return AuthTokensUser.fromJson(value);
+        case 'Auto':
+          return Auto.fromJson(value);
+        case 'Complaint':
+          return Complaint.fromJson(value);
+        case 'ComplaintHistoryInner':
+          return ComplaintHistoryInner.fromJson(value);
+        case 'Driver':
+          return Driver.fromJson(value);
+        case 'DriverAssignment':
+          return DriverAssignment.fromJson(value);
+        case 'DriverAssignmentAuto':
+          return DriverAssignmentAuto.fromJson(value);
+        case 'DriverAssignmentRoute':
+          return DriverAssignmentRoute.fromJson(value);
+        case 'DriverAssignmentToday':
+          return DriverAssignmentToday.fromJson(value);
+        case 'DriverTripsIdEndPatchRequest':
+          return DriverTripsIdEndPatchRequest.fromJson(value);
+        case 'DriverTripsIdMediaConfirmPost201Response':
+          return DriverTripsIdMediaConfirmPost201Response.fromJson(value);
+        case 'DriverTripsIdMediaConfirmPostRequest':
+          return DriverTripsIdMediaConfirmPostRequest.fromJson(value);
+        case 'DriverTripsIdMediaConfirmPostRequestGeo':
+          return DriverTripsIdMediaConfirmPostRequestGeo.fromJson(value);
+        case 'DriverTripsIdMediaPresignPost201Response':
+          return DriverTripsIdMediaPresignPost201Response.fromJson(value);
+        case 'DriverTripsIdMediaPresignPostRequest':
+          return DriverTripsIdMediaPresignPostRequest.fromJson(value);
+        case 'DriverTripsIdMqttTokenPost201Response':
+          return DriverTripsIdMqttTokenPost201Response.fromJson(value);
+        case 'DriverTripsIdPingsPost202Response':
+          return DriverTripsIdPingsPost202Response.fromJson(value);
+        case 'DriverTripsIdPingsPostRequest':
+          return DriverTripsIdPingsPostRequest.fromJson(value);
+        case 'DriverTripsIdPingsPostRequestPingsInner':
+          return DriverTripsIdPingsPostRequestPingsInner.fromJson(value);
+        case 'DriverTripsPostRequest':
+          return DriverTripsPostRequest.fromJson(value);
+        case 'Household':
+          return Household.fromJson(value);
         case 'LoginRequest':
           return LoginRequest.fromJson(value);
         case 'LoginRequestAnyOf':
           return LoginRequestAnyOf.fromJson(value);
         case 'LoginRequestAnyOf1':
           return LoginRequestAnyOf1.fromJson(value);
+        case 'MeDelete202Response':
+          return MeDelete202Response.fromJson(value);
+        case 'MeRetentionPolicyGet200Response':
+          return MeRetentionPolicyGet200Response.fromJson(value);
+        case 'NotificationsDevicesPostRequest':
+          return NotificationsDevicesPostRequest.fromJson(value);
         case 'OtpSendRequest':
           return OtpSendRequest.fromJson(value);
         case 'OtpSendResponse':
@@ -203,26 +249,40 @@ class ApiClient {
           return OtpVerifyResponse.fromJson(value);
         case 'Problem':
           return Problem.fromJson(value);
+        case 'Rating':
+          return Rating.fromJson(value);
         case 'RefreshRequest':
           return RefreshRequest.fromJson(value);
         case 'RegisterRequest':
           return RegisterRequest.fromJson(value);
-        case 'RegisterRequestOneOf':
-          return RegisterRequestOneOf.fromJson(value);
-        case 'RegisterRequestOneOf1':
-          return RegisterRequestOneOf1.fromJson(value);
-        case 'RegisterRequestOneOf1Profile':
-          return RegisterRequestOneOf1Profile.fromJson(value);
-        case 'RegisterRequestOneOfCredential':
-          return RegisterRequestOneOfCredential.fromJson(value);
-        case 'RegisterRequestOneOfCredentialAnyOf':
-          return RegisterRequestOneOfCredentialAnyOf.fromJson(value);
-        case 'RegisterRequestOneOfCredentialAnyOf1':
-          return RegisterRequestOneOfCredentialAnyOf1.fromJson(value);
-        case 'RegisterRequestOneOfProfile':
-          return RegisterRequestOneOfProfile.fromJson(value);
-        case 'RegisterRequestOneOfProfilePin':
-          return RegisterRequestOneOfProfilePin.fromJson(value);
+        case 'RegisterRequestAnyOf':
+          return RegisterRequestAnyOf.fromJson(value);
+        case 'RegisterRequestAnyOf1':
+          return RegisterRequestAnyOf1.fromJson(value);
+        case 'RegisterRequestAnyOf1Profile':
+          return RegisterRequestAnyOf1Profile.fromJson(value);
+        case 'RegisterRequestAnyOfProfile':
+          return RegisterRequestAnyOfProfile.fromJson(value);
+        case 'RegisterRequestAnyOfProfilePin':
+          return RegisterRequestAnyOfProfilePin.fromJson(value);
+        case 'ResidentComplaintsPostRequest':
+          return ResidentComplaintsPostRequest.fromJson(value);
+        case 'ResidentHome':
+          return ResidentHome.fromJson(value);
+        case 'ResidentHomeRoute':
+          return ResidentHomeRoute.fromJson(value);
+        case 'ResidentHomeServingAutosInner':
+          return ResidentHomeServingAutosInner.fromJson(value);
+        case 'ResidentHouseholdPatchRequest':
+          return ResidentHouseholdPatchRequest.fromJson(value);
+        case 'ResidentHouseholdPatchRequestPin':
+          return ResidentHouseholdPatchRequestPin.fromJson(value);
+        case 'ResidentRatingsPostRequest':
+          return ResidentRatingsPostRequest.fromJson(value);
+        case 'ResidentSettingsPatchRequest':
+          return ResidentSettingsPatchRequest.fromJson(value);
+        case 'Trip':
+          return Trip.fromJson(value);
         default:
           dynamic match;
           if (value is List && (match = _regList.firstMatch(targetType)?.group(1)) != null) {

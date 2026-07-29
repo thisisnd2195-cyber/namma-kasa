@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../core/api.dart';
 import '../core/api_client.dart';
+import 'package:namma_kasa_api/api.dart' hide ApiException;
+
 import '../core/theme.dart';
 import 'photo_capture.dart';
 import 'trip_tracker.dart';
@@ -21,7 +23,7 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
-  Map<String, dynamic>? _assignment;
+  DriverAssignment? _assignment;
   String? _error;
   bool _loading = true;
   bool _busy = false;
@@ -125,10 +127,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     });
     try {
       final trip = await ref.read(apiProvider).startTrip(passNumber);
-      final auto = (_assignment?['auto'] as Map<String, dynamic>?)?['registrationNumber'];
       await ref.read(tripTrackerProvider.notifier).start(
-            trip['id'] as String,
-            registration: auto as String? ?? '',
+            trip.id,
+            registration: _assignment?.auto.registrationNumber ?? '',
           );
       await _load();
     } on ApiException catch (e) {
@@ -189,31 +190,31 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
 
   List<Widget> _assignmentBody(ThemeData theme, TripTrackerStatus status) {
     final data = _assignment!;
-    final auto = data['auto'] as Map<String, dynamic>;
-    final route = data['route'] as Map<String, dynamic>;
-    final today = data['today'] as Map<String, dynamic>;
-    final activeTrip = data['activeTrip'] as Map<String, dynamic>?;
+    final auto = data.auto;
+    final route = data.route;
+    final today = data.today;
+    final activeTrip = data.activeTrip;
 
-    final wasteTypes = (today['wasteTypes'] as List<dynamic>).cast<String>();
-    final passesTotal = today['passesTotal'] as int;
-    final passesCompleted = today['passesCompleted'] as int;
-    final nextPass = today['nextPassNumber'] as int?;
-    final isCollectionDay = today['isCollectionDay'] as bool;
+    final wasteTypes = today.wasteTypes.map((w) => w.toString()).toList();
+    final passesTotal = today.passesTotal;
+    final passesCompleted = today.passesCompleted;
+    final nextPass = today.nextPassNumber;
+    final isCollectionDay = today.isCollectionDay;
 
     return [
       _Card(
         theme: theme,
         children: [
-          Text(auto['registrationNumber'] as String, style: theme.textTheme.displaySmall),
+          Text(auto.registrationNumber, style: theme.textTheme.displaySmall),
           Text(
-            '${route['routeCode']} · ${route['name']}',
+            '${route.routeCode} · ${route.name}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: Tokens.space3),
           Text(
-            '${route['windowStart']} – ${route['windowEnd']}',
+            '${route.windowStart} – ${route.windowEnd}',
             style: theme.textTheme.titleMedium,
           ),
           Text('Pass $passesCompleted of $passesTotal done', style: theme.textTheme.bodyMedium),
@@ -247,11 +248,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
       if (activeTrip != null) ...[
         _TrackingPanel(status: status, theme: theme),
         const SizedBox(height: Tokens.space3),
-        _PhotoRow(tripId: activeTrip['id'] as String, theme: theme),
+        _PhotoRow(tripId: activeTrip.id, theme: theme),
         const SizedBox(height: Tokens.space3),
         if (status.idleMinutes >= 30)
           OutlinedButton(
-            onPressed: () => _maybePromptIdle(activeTrip['id'] as String),
+            onPressed: () => _maybePromptIdle(activeTrip.id),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, Tokens.driverTouchTarget),
             ),
@@ -261,7 +262,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
           button: true,
           label: 'End the current trip and stop sharing location',
           child: FilledButton(
-            onPressed: _busy ? null : () => _endTrip(activeTrip['id'] as String),
+            onPressed: _busy ? null : () => _endTrip(activeTrip.id),
             style: FilledButton.styleFrom(backgroundColor: Tokens.error),
             child: Text(_busy ? 'Ending…' : 'End trip'),
           ),
