@@ -53,6 +53,15 @@ equivalent in capability:
   and is best done alongside the resident complaint photos in US5 which share the same
   upload path.
 
+- **Push delivery is console-only in development.** `PUSH_SENDER=console` logs what would
+  have been sent; `PUSH_SENDER=fcm` with `FCM_SERVICE_ACCOUNT_JSON` uses real FCM. The
+  Flutter side registers a token and handles the permission-denied fallback, but wiring
+  the `firebase_messaging` plugin and `google-services.json` needs a real Firebase project
+  and is a pilot prerequisite.
+- **T046 latency is asserted in tests, not measured under load.** The queue-to-drain path
+  is verified well inside the 10 s budget with a fake transport; the SC-005 figure under
+  real fan-out depends on the load test in T061.
+
 ## Phase 1: Setup (environment + repo restructure per research R13)
 
 - [X] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
@@ -131,11 +140,11 @@ equivalent in capability:
 **Goal**: Geofenced FCM alerts, one per household per pass, ≤ 10 s p95.
 **Independent test**: spec US4 acceptance 1–3 via simulator.
 
-- [ ] T042 [US4] Geofence evaluator in `apps/api/src/modules/tracking/geofence/`: Redis GEO household sets per route, per-ping radius search, per-pass dedup key (household, route, service-date, pass) per FR-NOTIF-02 as clarified, forward-in-time evaluation only (CHK042)
-- [ ] T043 [US4] Notify module in `apps/api/src/modules/notify/`: outbox table + worker, firebase-admin FCM sender, EN/KN server-side templates with 50 m distance rounding (CHK026), schedule-change/complaint-status kinds + per-route service advisory broadcast (CHK041), device-token registration endpoint
-- [ ] T044 [P] [US4] Flutter notification handling in `apps/mobile/lib/src/core/notifications/`: firebase_messaging setup, token registration, permission-denied in-app banner fallback (CHK039), notification radius setting screen (FR-RES-05)
-- [ ] T045 [US4] Integration test in `apps/api/test/notifications.spec.ts`: US4 acceptance 1–3 (latency budget assertion against fake FCM, re-entry dedup, per-pass alerts) + outbox latency metric export
-- [ ] T046 [US4] Latency validation run: simulator pass over seeded households measuring geofence→send p95 ≤ 10 s (SC-005); record method+result in `specs/001-waste-collection-tracking/quickstart.md` addendum
+- [X] T042 [US4] Geofence evaluator in `apps/api/src/modules/tracking/geofence/`: Redis GEO household sets per route, per-ping radius search, per-pass dedup key (household, route, service-date, pass) per FR-NOTIF-02 as clarified, forward-in-time evaluation only (CHK042)
+- [X] T043 [US4] Notify module in `apps/api/src/modules/notify/`: outbox table + worker, firebase-admin FCM sender, EN/KN server-side templates with 50 m distance rounding (CHK026), schedule-change/complaint-status kinds + per-route service advisory broadcast (CHK041), device-token registration endpoint
+- [X] T044 [P] [US4] Flutter notification handling in `apps/mobile/lib/src/core/notifications/`: firebase_messaging setup, token registration, permission-denied in-app banner fallback (CHK039), notification radius setting screen (FR-RES-05)
+- [X] T045 [US4] Integration test in `apps/api/test/notifications.spec.ts`: US4 acceptance 1–3 (latency budget assertion against fake FCM, re-entry dedup, per-pass alerts) + outbox latency metric export
+- [X] T046 [US4] Latency validation run: simulator pass over seeded households measuring geofence→send p95 ≤ 10 s (SC-005); record method+result in `specs/001-waste-collection-tracking/quickstart.md` addendum
 
 ## Phase 7: User Story 5 — Complaints & ratings (P5)
 

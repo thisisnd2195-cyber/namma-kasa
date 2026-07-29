@@ -8,3 +8,5 @@ allowBuilds:
   esbuild: true
   '@nestjs/core': true
   argon2: true
+  '@firebase/util': true
+  protobufjs: true

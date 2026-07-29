@@ -59,6 +59,10 @@ class Api {
     return _toSession(response.data!);
   }
 
+  Future<void> registerDeviceToken(String fcmToken) async {
+    await _dio.post<void>('/notifications/devices', data: {'fcmToken': fcmToken});
+  }
+
   Future<Map<String, dynamic>> residentHome() async {
     final response = await _dio.get<Map<String, dynamic>>('/resident/home');
     return response.data!;

@@ -18,6 +18,7 @@ export const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().default(30),
 
   OTP_SENDER: z.enum(["console", "msg91"]).default("console"),
+  PUSH_SENDER: z.enum(["console", "fcm"]).default("console"),
   MSG91_AUTH_KEY: z.string().optional(),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
