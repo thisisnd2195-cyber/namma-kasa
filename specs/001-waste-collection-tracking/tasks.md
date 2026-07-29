@@ -373,3 +373,44 @@ differs between the two bundles — rather than that translations exist.
 
 `routes.path` is dropped. FR-ROUTE-04 is served by `recorded_path`, which also
 carries the trip it came from and when it was adopted.
+
+## Phase 14: Convergence
+
+- [X] T105 CRITICAL: add an end-to-end integration test spanning MQTT publish → `MqttConsumer` → `IngestService` → proximity alert queued → `LiveGateway` frame, per Constitution V (missing) — the MUST requires integration coverage of trip tracking and proximity notification, and both junction components measure 0% with no test referencing them
+- [X] T106 Assert that admin mutations write an attributable `audit_log` row per SC-010 (missing) — `audit.interceptor.ts` is at 0% coverage and `audit_log` appears in no test
+- [X] T107 Cover `trips.service.assignmentFor` and `apps/api/src/modules/tracking/media.service.ts` per FR-DRV-01 and FR-DRV-06 (missing) — the driver home payload is uncovered and the media service is never loaded by any test
+- [X] T108 Cover the two uncovered authorization decisions — `requireOwnedTrip` and the `LiveGateway` resident `routeId` check — per FR-DRV-02 and FR-RES-07 (missing) — each decides whether one user may act on or see another's data
+- [X] T109 Cover `households.service.reviewQueue` and `assignRoute` per FR-AUTH-08 (missing) — the manual mapping path for households that failed auto-assignment is at 12.7% coverage
+- [X] T110 Add a regression test that the RFC 9457 conflict geometry survives `problem.filter.ts` per Constitution V and FR-WARD-05 (partial) — the fix that restored extension members has no test, and the overlap specs assert only the error message
+
+### Phase 14 notes
+
+This phase was scoped by measurement rather than reading. `pnpm coverage` in
+`apps/api` (added here) showed 47% line coverage with the gaps concentrated in
+the components that join the system together, which is where the previous three
+phases' defects had all been found.
+
+Measured before → after on the targeted files:
+
+| file | before | after |
+| --- | --- | --- |
+| `mqtt.consumer.ts` | 0% | 92.7% |
+| `live.gateway.ts` | 0% | 69.4% |
+| `media.service.ts` | 0% (never loaded) | 100% |
+| `households.service.ts` | 12.7% | 96.8% |
+| `audit.interceptor.ts` | 0% | 100% |
+| `problem.filter.ts` | 0% | 88.4% |
+| `trips.service.ts` | 49.8% | 73.1% |
+| total | 47.2% | 55.4% |
+
+No production defect was found. The end-to-end test did surface two facts worth
+recording: ingest keeps the highest accepted `seq` per trip in Redis and that
+key outlives a test run, so a suite whose sequence numbers restart lower has
+every ping silently dropped; and the proximity dedup key is claimed per
+household per pass and likewise persists, so a test asserting an alert must
+clear the claims for every household on the route, not just its own fixture.
+Both cost time to diagnose because the failure mode is silence.
+
+The ping field names (`recordedAt`, `seq`) were verified to match
+`ping_spool.dart`'s `toJson` exactly — a mismatch there would be dropped by the
+consumer's `safeParse` with no error anywhere.
