@@ -1,0 +1,22 @@
+# deps
+node_modules/
+
+# builds
+.next/
+dist/
+build/
+.expo/
+.turbo/
+
+# env
+.env
+.env.*
+!.env.example
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# misc
+.DS_Store
+*.log
