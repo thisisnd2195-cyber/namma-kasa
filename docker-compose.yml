@@ -34,7 +34,10 @@ services:
   emqx:
     image: emqx/emqx:5.8
     environment:
-      EMQX_ALLOW_ANONYMOUS: "false"
+      # Local development only. Production authenticates devices with the
+      # driver's access token and restricts publish to their own trip topic;
+      # see contracts/realtime.md.
+      EMQX_ALLOW_ANONYMOUS: "true"
       EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-devpassword}
     ports:
       - "${MQTT_PORT:-1883}:1883"

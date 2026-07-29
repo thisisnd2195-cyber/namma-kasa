@@ -8,6 +8,7 @@ import { RedisModule } from "./redis/redis.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { GeoModule } from "./modules/geo/geo.module";
 import { FleetModule } from "./modules/fleet/fleet.module";
+import { TrackingModule } from "./modules/tracking/tracking.module";
 import { AuthGuard } from "./modules/auth/guards/auth.guard";
 import { RateLimitGuard } from "./common/rate-limit/rate-limit.guard";
 import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
@@ -30,6 +31,7 @@ import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
     AuthModule,
     GeoModule,
     FleetModule,
+    TrackingModule,
   ],
   providers: [
     // Deny by default: every route needs a token unless marked @Public.

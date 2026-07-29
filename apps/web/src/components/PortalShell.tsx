@@ -12,6 +12,7 @@ const NAV = [
   { href: "/wards", label: "Wards", superOnly: true },
   { href: "/routes", label: "Routes", superOnly: false },
   { href: "/fleet", label: "Fleet", superOnly: false },
+  { href: "/live", label: "Live", superOnly: false },
   { href: "/review-queue", label: "Review queue", superOnly: false },
 ];
 

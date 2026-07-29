@@ -42,6 +42,11 @@ equivalent in capability:
   `lib/` breaks Dart's layout rules. Regenerate with `pnpm contracts:generate`; CI guards drift
   with `pnpm contracts:check`. Requires a JDK (`brew install openjdk`).
 
+- **MQTT auth is dev-open.** `docker-compose.yml` sets `EMQX_ALLOW_ANONYMOUS=true` so the
+  simulator and local devices can publish without credentials. Production must authenticate
+  devices with the driver's access token and restrict publish to their own trip topic, per
+  `contracts/realtime.md` — that hook is not built yet and is a prerequisite for the pilot.
+
 ## Phase 1: Setup (environment + repo restructure per research R13)
 
 - [X] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
@@ -86,16 +91,16 @@ equivalent in capability:
 **Goal**: Driver registration → trip lifecycle → continuous GPS with offline spool → watchdogs.
 **Independent test**: spec US2 acceptance 1–5 using the simulator + a real device (quickstart §3–4).
 
-- [ ] T024 [P] [US2] Zod contracts for trips/pings/media/assignment-view in `packages/shared/src/contracts/`; regenerate Dart client
-- [ ] T025 [US2] Tracking module (trips) in `apps/api/src/modules/tracking/`: start (pass sequencing via `route_pass_days` incl. `skipped` auto-marking scheduler, one-active-per-auto 409), end/abort (driver reason, admin abort, `auto_idle` force-end 45 min per FR-DRV-08), assignment snapshot into trip
-- [ ] T026 [US2] Ingest in `apps/api/src/modules/tracking/ingest/`: EMQX JWT auth hook + publish ACL, MQTT consumer for `trips/{id}/pings`, HTTPS batch fallback endpoint, validation (accuracy ≤ 100 m, 3-ping rolling speed window per CHK036, seq dedup/ordering per contracts/realtime.md), Redis latest-position write, Timescale append
-- [ ] T027 [US2] Watchdogs in `apps/api/src/modules/tracking/watchdogs/`: tracking-dropped detector (received_at gap > 3 min, auto-clear on resume, FR-DRV-05), idle auto-end prompt flow (30 min) + unreachable force-end (45 min)
+- [X] T024 [P] [US2] Zod contracts for trips/pings/media/assignment-view in `packages/shared/src/contracts/`; regenerate Dart client
+- [X] T025 [US2] Tracking module (trips) in `apps/api/src/modules/tracking/`: start (pass sequencing via `route_pass_days` incl. `skipped` auto-marking scheduler, one-active-per-auto 409), end/abort (driver reason, admin abort, `auto_idle` force-end 45 min per FR-DRV-08), assignment snapshot into trip
+- [X] T026 [US2] Ingest in `apps/api/src/modules/tracking/ingest/`: EMQX JWT auth hook + publish ACL, MQTT consumer for `trips/{id}/pings`, HTTPS batch fallback endpoint, validation (accuracy ≤ 100 m, 3-ping rolling speed window per CHK036, seq dedup/ordering per contracts/realtime.md), Redis latest-position write, Timescale append
+- [X] T027 [US2] Watchdogs in `apps/api/src/modules/tracking/watchdogs/`: tracking-dropped detector (received_at gap > 3 min, auto-clear on resume, FR-DRV-05), idle auto-end prompt flow (30 min) + unreachable force-end (45 min)
 - [ ] T028 [P] [US2] Flutter driver registration + home in `apps/mobile/lib/src/driver/`: pre-provisioned phone flow, consent screen (trip-time tracking, EN/KN per CHK009), assigned auto/route area map, window, waste types, pass progress (FR-DRV-01)
 - [ ] T029 [US2] Flutter trip runner in `apps/mobile/lib/src/driver/trip/`: start/end (56 dp controls), foreground service via flutter_foreground_task + geolocator (5 s / 25 m cadence), MQTT publish with drift-backed unbounded offline spool and ordered replay (FR-DRV-03 as clarified), GPS-quality warning (CHK008), battery-optimization first-run wizard with OEM steps (FR-DRV-04)
 - [ ] T030 [P] [US2] Photo capture in `apps/mobile/lib/src/driver/media/`: camera-first, client compression ≤ 500 KB, drift offline queue, presign → PUT → confirm flow (FR-DRV-06); presign/confirm endpoints in `apps/api/src/modules/tracking/media/` with per-trip caps (CHK047)
-- [ ] T031 [US2] Trip simulator `apps/api/scripts/simulate-trip.ts`: replays `fixtures/trail-route1.geojson` over MQTT as the seeded driver (quickstart §4)
-- [ ] T032 [US2] Basic ward live dashboard in `apps/web/src/app/live/[wardId]/`: active trips map from Redis positions + tracking-dropped alerts (FR-DASH-01 minimum needed for US2 acceptance 5)
-- [ ] T033 [US2] Integration tests in `apps/api/test/tracking.spec.ts`: US2 acceptance 1–5 (unprovisioned refusal, offline replay ordering, pass gating, idle auto-end, dropped alert) with Testcontainers (Postgres/Redis/EMQX)
+- [X] T031 [US2] Trip simulator `apps/api/scripts/simulate-trip.ts`: replays `fixtures/trail-route1.geojson` over MQTT as the seeded driver (quickstart §4)
+- [X] T032 [US2] Basic ward live dashboard in `apps/web/src/app/live/[wardId]/`: active trips map from Redis positions + tracking-dropped alerts (FR-DASH-01 minimum needed for US2 acceptance 5)
+- [X] T033 [US2] Integration tests in `apps/api/test/tracking.spec.ts`: US2 acceptance 1–5 (unprovisioned refusal, offline replay ordering, pass gating, idle auto-end, dropped alert) with Testcontainers (Postgres/Redis/EMQX)
 
 **Checkpoint**: simulator-driven trip visible on portal dashboard; real-device smoke per quickstart.
 
