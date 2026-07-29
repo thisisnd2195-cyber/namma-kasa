@@ -38,14 +38,24 @@ services:
       # publish to exactly one trip topic (contracts/realtime.md §1). The
       # secret matches the API's JWT_SECRET so no key distribution is needed.
       EMQX_ALLOW_ANONYMOUS: "false"
+      # 1. The server-side ingest consumer, seeded from auth-bootstrap.csv.
       EMQX_AUTHENTICATION__1__MECHANISM: password_based
       EMQX_AUTHENTICATION__1__BACKEND: built_in_database
+      EMQX_AUTHENTICATION__1__BOOTSTRAP_FILE: /opt/emqx/etc/auth-bootstrap.csv
+      EMQX_AUTHENTICATION__1__BOOTSTRAP_TYPE: plain
+      # 2. Driver devices, via the per-trip JWT. ACL_CLAIM_NAME is what makes
+      #    the token's `acl` claim actually enforced — without it the token
+      #    authenticates but grants publish to everything.
       EMQX_AUTHENTICATION__2__MECHANISM: jwt
       EMQX_AUTHENTICATION__2__FROM: password
       EMQX_AUTHENTICATION__2__USE_JWKS: "false"
       EMQX_AUTHENTICATION__2__ALGORITHM: "hmac-based"
       EMQX_AUTHENTICATION__2__SECRET: ${JWT_SECRET:-dev-only-change-me}
+      EMQX_AUTHENTICATION__2__ACL_CLAIM_NAME: acl
       EMQX_AUTHORIZATION__NO_MATCH: deny
+      # Disconnect rather than silently dropping: a device publishing where it
+      # should not is a bug or an attack, and both deserve to be loud.
+      EMQX_AUTHORIZATION__DENY_ACTION: disconnect
       EMQX_AUTHORIZATION__SOURCES__1__TYPE: built_in_database
       EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-devpassword}
     ports:
@@ -53,6 +63,7 @@ services:
       - "${EMQX_DASHBOARD_PORT:-18083}:18083"
     volumes:
       - emqx-data:/opt/emqx/data
+      - ./docker/emqx/auth-bootstrap.csv:/opt/emqx/etc/auth-bootstrap.csv:ro
     healthcheck:
       test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
       interval: 10s

@@ -106,13 +106,23 @@ Run on an Apple Silicon laptop, Colima VM (4 CPU / 6 GB), against the Compose st
 | Ward import (US1) | 1 accepted, 1 rejected with the conflicting ward named |
 | Assignment history (US1) | Reassignment closed the prior row, left exactly one open |
 | Ward scoping (US1) | Own ward 200, other ward 403, super-admin-only endpoint 403 |
-| GPS ingest (US2) | 158/158 MQTT pings persisted, 2.6 km trail |
+| GPS ingest (US2) | 158/158 MQTT pings persisted over the **authenticated** broker, 2.6 km trail |
 | Collection events (US3) | All 3 route households recorded as the auto passed within 75 m |
 | Proximity alerts (US4) | 3 households, 1 alert each, Kannada resident received Kannada copy |
 | Complaint evidence (US5) | Admin queue showed "served that day = true, last collected 09:38" |
 | Ingest load | 150 autos at 1 Hz: 149.7 pings/sec accepted, p50 35 ms, p95 83 ms, p99 103 ms |
 | Metrics | Per-ward active trips, trips today, skipped passes, outbox depth |
 | Tests | 84 API, 12 Flutter; `flutter analyze`, typecheck, lint, build, contract drift all clean |
+
+Broker authentication is on: the ingest consumer authenticates from
+`docker/emqx/auth-bootstrap.csv`, and devices present a per-trip JWT whose `acl`
+claim is enforced (`ACL_CLAIM_NAME`) with `DENY_ACTION=disconnect`. Six broker
+tests cover both directions, including that a valid token cannot publish to
+another trip's topic.
+
+Changing `docker-compose.yml` requires `docker compose up -d --force-recreate
+<service>`; a plain `up -d` leaves an existing container on its old config,
+which is how a broker change once appeared to pass while never being applied.
 
 The load figure is cadence-limited rather than a saturation point: the useful
 number is the per-ping cost (p95 83 ms), which is what to extrapolate the

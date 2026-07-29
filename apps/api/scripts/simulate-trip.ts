@@ -21,7 +21,9 @@ import { join } from "node:path";
 import mqtt from "mqtt";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
+import { ConfigService } from "@nestjs/config";
 import type { Database } from "../src/db/types";
+import { MqttTokenService } from "../src/modules/tracking/mqtt-token.service";
 import { serviceDateIST } from "../src/modules/tracking/trips.service";
 
 const DATABASE_URL =
@@ -172,8 +174,17 @@ async function main(): Promise<void> {
     `Trip ${trip.id}\n  route ${route.name} (${route.route_code}) pass ${passNumber}\n  auto  ${assignment.reg}\n  mqtt  ${MQTT_URL} topic trips/${trip.id}/pings\n`,
   );
 
+  // The broker rejects anonymous publishers, so the simulator authenticates
+  // exactly as a real device does: a per-trip token whose ACL grants publish to
+  // this trip's topic and nothing else.
+  const credentials = new MqttTokenService(
+    new ConfigService({ JWT_SECRET: process.env.JWT_SECRET ?? "dev-only-change-me" }),
+  ).issue(assignment.driverId, trip.id);
+
   const client = await mqtt.connectAsync(MQTT_URL, {
     clientId: `simulate-trip-${process.pid}`,
+    username: credentials.username,
+    password: credentials.password,
   });
 
   const points = [...walk(trail.geometry.coordinates, intervalSec, (kmh * 1000) / 3600)];
