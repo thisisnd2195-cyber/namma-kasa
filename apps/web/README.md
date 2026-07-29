@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Namma Kasa — admin portal
 
-## Getting Started
+Next.js portal for the people who run collection: Super Admins who set up a
+city's wards and operators, and Ward Admins who run the routes, fleet and
+complaints inside one ward.
 
-First, run the development server:
+## Running
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```sh
+pnpm --filter @namma-kasa/web dev      # :3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Needs the API on `:4000` and its infrastructure up; see
+[../../docs/operations.md](../../docs/operations.md). Point elsewhere with
+`NEXT_PUBLIC_API_BASE`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Purpose |
+|---|---|
+| `/dashboard` | City rollups: coverage, complaints, SLA breaches, missed pickups |
+| `/wards` | Boundaries — draw, bulk-import GeoJSON, resolve overlaps |
+| `/routes` | Service areas, schedules, passes, adopting a driven path |
+| `/fleet` | Autos, drivers, and their time-bounded assignments |
+| `/live` | Active autos on a map, tracking health, driver-reported problems |
+| `/review-queue` | Households automatic mapping could not place |
+| `/complaints` | The queue, each with the GPS evidence that answers it |
 
-## Learn More
+## Types come from the contract
 
-To learn more about Next.js, take a look at the following resources:
+The portal imports Zod types from `@namma-kasa/shared` rather than redeclaring
+them. Redeclaring a shape the backend owns is a defect — Constitution Principle
+IV.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Dates cross the wire as ISO strings while Zod infers them as `Date`, so pages
+map through a local `Wire<T>` type. That is the one honest exception, and it is
+narrow on purpose.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Design tokens
 
-## Deploy on Vercel
+Colours, type scale and radii are CSS custom properties in `@theme`
+(Tailwind v4), Google/Material-3-aligned and deliberately neutral. Use
+`var(--color-…)` and `text-[length:var(--text-…)]` rather than literal values, so
+a token change lands everywhere at once.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The portal targets WCAG 2.1 AA.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Authorization is not the portal's job
+
+`PortalShell` gates rendering on a session, but that is cosmetic — it only avoids
+drawing a shell the user cannot fill. **The API enforces every rule regardless**,
+including pinning a Ward Admin to their own ward server-side. Never treat a
+client-side check as a control.

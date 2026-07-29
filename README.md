@@ -62,32 +62,47 @@ occupies the default port.
 SMS is not wired in development: `OTP_SENDER=console` prints codes to the API log
 as `[dev-otp] <phone> <code>`.
 
+## Documentation
+
+| Document | Covers |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | How it fits together, with diagrams: system context, the path a GPS ping takes, the contract pipeline, the data model |
+| [docs/operations.md](docs/operations.md) | Local setup, migrations, deploy, monitoring, and a runbook for the failures worth knowing |
+| [specs/001-waste-collection-tracking/](specs/001-waste-collection-tracking/) | Requirements, plan, data model, and the task history that built it |
+
 ## Repo layout
 
 ```
-apps/api        NestJS: auth, geo (wards/routes/households), fleet, + tracking/notify/complaints to come
-apps/web        Admin portal: wards, routes, fleet, review queue
+apps/api        NestJS: auth, geo, fleet, tracking, notify, complaints, issues, compliance
+apps/web        Admin portal: dashboard, wards, routes, fleet, live, review queue, complaints
 apps/mobile     Flutter app: resident and driver, single binary
 packages/shared Zod contracts, shared by API and portal
 contracts/      Generated OpenAPI document (committed)
+docs/           Architecture and operations
 ```
 
 ## Commands
 
 ```sh
 pnpm typecheck && pnpm lint && pnpm build   # TS workspaces
-pnpm --filter @namma-kasa/api test          # 43 tests against live Postgres/Redis
-pnpm contracts:check                        # fails if OpenAPI drifts from the Zod schemas
+pnpm --filter @namma-kasa/api test          # 143 tests against live Postgres/Redis/EMQX/MinIO
+pnpm --filter @namma-kasa/api coverage      # line coverage by file
+pnpm contracts:check                        # OpenAPI in sync, and every served route documented
 pnpm contracts:generate                     # regenerate OpenAPI + Dart client
-cd apps/mobile && flutter analyze && flutter test
+cd apps/mobile && flutter analyze && flutter test   # 28 tests
 ```
 
 ## Status
 
-Built: infrastructure, database schema with geo invariants enforced in triggers,
-auth (OTP, password/Google, rotating refresh, driver pre-provisioning), authorization
-with ward scoping and audit logging, and the full ward/route/fleet admin surface with
-its portal UI.
+Feature-complete against `specs/001-waste-collection-tracking/spec.md`: the
+database schema with its geo invariants enforced in triggers, auth, ward-scoped
+authorization with audit logging, the ward/route/fleet admin surface, driver trip
+tracking with MQTT ingest, the resident live map, proximity and arrival alerts,
+complaints with SLA tracking, ratings, missed-pickup detection, and DPDP erasure.
 
-Next: driver trip tracking with GPS ingest, the resident live map, proximity
-notifications, and complaints. See `specs/001-waste-collection-tracking/tasks.md`.
+108 of 110 tasks are done. The two that are not need credentials rather than
+code — Firebase for push (T066) and an OAuth client id for Google Sign-In (T074).
+Both are described under Known gaps in [docs/operations.md](docs/operations.md).
+
+Not yet built, and deliberately deferred past pilot: infrastructure-as-code,
+blue-green deploys and PITR.
