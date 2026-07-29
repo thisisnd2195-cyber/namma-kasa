@@ -225,3 +225,29 @@ T062 changed the broker from open to closed: devices now authenticate with a
 per-trip JWT whose `acl` claim grants publish to exactly one topic. The
 simulator publishes with anonymous credentials and will need the same token
 flow before it runs again.
+
+## Phase 10: Convergence
+
+Second convergence pass. The Phase 9 broker change (T062) was marked complete on
+the strength of a config edit that had never been applied: the EMQX container
+was still running its previous configuration, so the "closed broker" was never
+actually tested. Forcing the config to apply reveals that it takes the primary
+GPS ingest path down, because no broker credentials were ever provisioned.
+
+- [ ] T079 Provision EMQX credentials for the ingest consumer (bootstrap CSV or built-in-database seed) so `MqttConsumer` can subscribe, per FR-DRV-03 and plan R4 (contradicts) — CRITICAL: the consumer is currently in a reconnect loop with "Bad username or password" and no ping can reach the server over MQTT
+- [ ] T080 Mint a per-trip MQTT token in `apps/api/scripts/simulate-trip.ts` so it can publish against the authenticated broker, per quickstart §4 (contradicts) — CRITICAL: the simulator is the only way to exercise US2–US5 without a vehicle, and it can no longer connect
+- [ ] T081 Add a broker connectivity test to `apps/api/test/` that fails when the consumer cannot subscribe or a device token is rejected, per Constitution V (missing) — a complete ingest outage passed every existing gate
+- [ ] T082 Add explicit `EMQX_AUTHORIZATION` rules and a test proving a valid token cannot publish to another trip's topic, per contracts/realtime.md §1 (partial) — the ACL is currently asserted only by the JWT claim
+- [ ] T083 Re-run the simulator against the authenticated broker and correct the "158/158 MQTT pings persisted" line in quickstart.md to reflect a reproducible result, per quickstart Verification record (contradicts)
+
+### Phase 10 notes
+
+Verifying a container-level config change requires recreating the container.
+`docker compose up -d` alone will not restart a service whose image and command
+are unchanged, which is exactly how the Phase 9 verification came to measure the
+old broker. Any future task that edits `docker-compose.yml` should end with
+`docker compose up -d --force-recreate <service>` and a functional check.
+
+The local stack is currently left with authentication active and MQTT ingest
+failing. The HTTPS fallback endpoint and all ingest logic are unaffected (13
+tracking tests pass); only the broker path is down.
