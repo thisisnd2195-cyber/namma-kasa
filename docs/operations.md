@@ -92,6 +92,24 @@ pnpm --filter @namma-kasa/api coverage            # line coverage by file (curre
 cd apps/mobile && flutter analyze && flutter test # 49 tests
 ```
 
+### Live smoke test
+
+The vitest suites boot modules in-process. `apps/api/scripts/smoke.mjs` goes one
+step further: it drives a **running server** through the whole product journey —
+OTP registration read from the log, the per-trip MQTT device JWT against EMQX
+(including the ACL refusing another trip's topic), the resident's real
+WebSocket, Kannada push copy through the outbox drain, complaint evidence, the
+recorded route path, the dashboard, and DPDP erasure. 34 checks.
+
+```sh
+pnpm --filter @namma-kasa/api seed              # clean known state
+docker exec namma-kasa-redis-1 redis-cli FLUSHALL
+node dist/src/main.js > /tmp/smoke-api.log &    # with the usual env, PORT=4100
+node scripts/smoke.mjs http://localhost:4100 /tmp/smoke-api.log
+```
+
+Re-seed between runs: each run consumes one of the route's passes.
+
 The API tests run against **live infrastructure**, not mocks, and share one
 database. A spec that mutates shared fixtures must snapshot and restore them —
 `test/dashboards.spec.ts` shows the pattern for route collection windows.

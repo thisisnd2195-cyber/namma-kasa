@@ -175,10 +175,18 @@ describe("a driver's day over HTTP", () => {
     if (assignment.status !== 200) return;
 
     // End anything already running so the pass sequence is deterministic.
+    // Pass state (route_pass_days) is shared per ROUTE, so an active trip left
+    // by another auto — e.g. the live smoke test — blocks this pass too.
     await db
       .updateTable("trips")
       .set({ status: "completed", ended_at: new Date() })
-      .where("auto_id", "=", assignment.body.auto.id)
+      .where("route_id", "=", assignment.body.route.id)
+      .where("status", "=", "active")
+      .execute();
+    await db
+      .updateTable("route_pass_days")
+      .set({ status: "completed" })
+      .where("route_id", "=", assignment.body.route.id)
       .where("status", "=", "active")
       .execute();
 

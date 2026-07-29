@@ -186,7 +186,7 @@ describe("ward and route administration over HTTP", () => {
       `/v1/admin/wards/${wardId}/edit-impact`,
       superAdmin,
       box(78.9, 14.9, 0.01),
-    ).expect(201);
+    ).expect(200);
 
     expect(response.body).toHaveProperty("affectedHouseholds");
     expect(response.body).toHaveProperty("routesOutsideNewBoundary");

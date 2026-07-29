@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import {
   assignHouseholdRouteSchema,
   createOperatorSchema,
@@ -86,6 +97,7 @@ export class AdminGeoController {
 
   /** Dry run: what a boundary change would strand, before committing to it. */
   @Post("wards/:wardId/edit-impact")
+  @HttpCode(HttpStatus.OK) // reads state; the contract documents 200, not POST's default 201
   @Roles("super_admin")
   editImpact(
     @Param("wardId") wardId: string,
@@ -137,6 +149,7 @@ export class AdminGeoController {
 
   /** Adopt a driven trip's trail as this route's path (FR-ROUTE-04). */
   @Post("routes/:id/recorded-path")
+  @HttpCode(HttpStatus.OK) // updates an existing route; the contract documents 200
   @Roles("super_admin", "ward_admin")
   recordRoutePath(
     @Param("id") id: string,
