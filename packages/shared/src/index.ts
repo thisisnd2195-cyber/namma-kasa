@@ -4,3 +4,4 @@ export * from "./contracts/auth";
 export * from "./contracts/admin";
 export * from "./contracts/tracking";
 export * from "./contracts/resident";
+export * from "./contracts/complaints";

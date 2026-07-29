@@ -151,12 +151,12 @@ equivalent in capability:
 **Goal**: Complaint lifecycle with notifications; one rating per household per IST collection day.
 **Independent test**: spec US5 acceptance 1–3.
 
-- [ ] T047 [P] [US5] Zod contracts for complaints/ratings in `packages/shared/src/contracts/`; regenerate Dart client
-- [ ] T048 [US5] Complaints module in `apps/api/src/modules/complaints/`: create (category/description/≤ 3 photos, 5-per-day household limit), status transitions with `complaint_events` history, ward-admin queue endpoints, behavior-complaint driver-identity shielding (CHK034), status-change notifications via notify module (FR-NOTIF-04)
-- [ ] T049 [US5] Ratings in `apps/api/src/modules/complaints/ratings/`: 1–5 stars, unique (household, IST collection_date) with 409, MVP trigger = collection event that day (CHK035)
-- [ ] T050 [P] [US5] Flutter complaint + rating flows in `apps/mobile/lib/src/resident/feedback/`: complaint form with photos (reuse presign), status history view, rating banner post-collection
-- [ ] T051 [P] [US5] Portal complaints queue in `apps/web/src/app/complaints/`: filterable queue, status workflow, resolution notes
-- [ ] T052 [US5] Integration tests in `apps/api/test/complaints.spec.ts`: US5 acceptance 1–3 (status history + notification, duplicate-rating 409, dashboard trip status present)
+- [X] T047 [P] [US5] Zod contracts for complaints/ratings in `packages/shared/src/contracts/`; regenerate Dart client
+- [X] T048 [US5] Complaints module in `apps/api/src/modules/complaints/`: create (category/description/≤ 3 photos, 5-per-day household limit), status transitions with `complaint_events` history, ward-admin queue endpoints, behavior-complaint driver-identity shielding (CHK034), status-change notifications via notify module (FR-NOTIF-04)
+- [X] T049 [US5] Ratings in `apps/api/src/modules/complaints/ratings/`: 1–5 stars, unique (household, IST collection_date) with 409, MVP trigger = collection event that day (CHK035)
+- [X] T050 [P] [US5] Flutter complaint + rating flows in `apps/mobile/lib/src/resident/feedback/`: complaint form with photos (reuse presign), status history view, rating banner post-collection
+- [X] T051 [P] [US5] Portal complaints queue in `apps/web/src/app/complaints/`: filterable queue, status workflow, resolution notes
+- [X] T052 [US5] Integration tests in `apps/api/test/complaints.spec.ts`: US5 acceptance 1–3 (status history + notification, duplicate-rating 409, dashboard trip status present)
 
 ## Phase 8: Polish & Cross-Cutting
 

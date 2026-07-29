@@ -11,6 +11,7 @@ import { FleetModule } from "./modules/fleet/fleet.module";
 import { TrackingModule } from "./modules/tracking/tracking.module";
 import { ResidentModule } from "./modules/resident/resident.module";
 import { NotifyModule } from "./modules/notify/notify.module";
+import { ComplaintsModule } from "./modules/complaints/complaints.module";
 import { AuthGuard } from "./modules/auth/guards/auth.guard";
 import { RateLimitGuard } from "./common/rate-limit/rate-limit.guard";
 import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
@@ -36,6 +37,7 @@ import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
     TrackingModule,
     ResidentModule,
     NotifyModule,
+    ComplaintsModule,
   ],
   providers: [
     // Deny by default: every route needs a token unless marked @Public.

@@ -30,7 +30,7 @@ export interface OperatorsTable {
   type: OperatorType;
   config: Generated<Record<string, unknown>>;
   status: Generated<LifecycleStatus>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -45,7 +45,7 @@ export interface UsersTable {
   status: Generated<UserStatus>;
   consented_at: Timestamp | null;
   deletion_requested_at: Timestamp | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -57,7 +57,7 @@ export interface RefreshTokensTable {
   expires_at: Timestamp;
   rotated_from: string | null;
   revoked_at: Timestamp | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
 }
 
 export interface DeviceTokensTable {
@@ -76,7 +76,7 @@ export interface WardsTable {
   boundary: Geometry;
   ward_admin_user_id: string | null;
   status: Generated<LifecycleStatus>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -92,7 +92,7 @@ export interface RoutesTable {
   window_end: string;
   passes_per_day: Generated<number>;
   waste_type_schedule: Generated<Record<string, string[]>>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -104,7 +104,7 @@ export interface AutosTable {
   photos: Generated<string[]>;
   status: Generated<AutoStatus>;
   onboarded_by: string | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -118,7 +118,7 @@ export interface DriversTable {
   photo_url: string | null;
   emergency_contact: string | null;
   status: Generated<DriverStatus>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -151,7 +151,7 @@ export interface HouseholdsTable {
   route_id: string | null;
   mapping_status: Generated<MappingStatus>;
   notification_radius_m: Generated<number>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -162,12 +162,12 @@ export interface TripsTable {
   route_id: string;
   pass_number: number;
   service_date: ColumnType<string, string, string>;
-  started_at: Generated<Timestamp>;
+  started_at: Timestamp;
   ended_at: Timestamp | null;
   status: Generated<TripStatus>;
   end_reason: TripEndReason | null;
   distance_covered_m: number | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
 }
 
 export interface RoutePassDaysTable {
@@ -188,7 +188,7 @@ export interface LocationPingsTable {
   heading: number | null;
   accuracy_m: number | null;
   recorded_at: Timestamp;
-  received_at: Generated<Timestamp>;
+  received_at: Timestamp;
 }
 
 export interface HouseholdCollectionsTable {
@@ -197,7 +197,7 @@ export interface HouseholdCollectionsTable {
   trip_id: string;
   route_id: string;
   pass_number: number;
-  detected_at: Generated<Timestamp>;
+  detected_at: Timestamp;
 }
 
 export interface MediaUploadsTable {
@@ -207,8 +207,8 @@ export interface MediaUploadsTable {
   type: Generated<MediaType>;
   object_url: string;
   geo: Geometry | null;
-  captured_at: Generated<Timestamp>;
-  expires_at: Generated<Timestamp>;
+  captured_at: Timestamp;
+  expires_at: Timestamp;
 }
 
 export interface ComplaintsTable {
@@ -223,7 +223,7 @@ export interface ComplaintsTable {
   assigned_to: string | null;
   sla_due_at: Timestamp | null;
   resolution_note: string | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   updated_at: Timestamp;
 }
 
@@ -234,7 +234,7 @@ export interface ComplaintEventsTable {
   from_status: ComplaintStatus | null;
   to_status: ComplaintStatus;
   note: string | null;
-  at: Generated<Timestamp>;
+  at: Timestamp;
 }
 
 export interface RatingsTable {
@@ -245,7 +245,7 @@ export interface RatingsTable {
   stars: number;
   comment: string | null;
   collection_date: ColumnType<string, string, string>;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
 }
 
 export interface NotificationsTable {
@@ -254,7 +254,7 @@ export interface NotificationsTable {
   kind: NotificationKind;
   payload: Record<string, unknown>;
   dedup_key: string | null;
-  created_at: Generated<Timestamp>;
+  created_at: Timestamp;
   sent_at: Timestamp | null;
 }
 
@@ -266,7 +266,7 @@ export interface AuditLogTable {
   action: string;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
-  at: Generated<Timestamp>;
+  at: Timestamp;
 }
 
 export interface Database {

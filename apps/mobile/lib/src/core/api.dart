@@ -97,6 +97,22 @@ class Api {
     return _toSession(response.data!);
   }
 
+  Future<List<Map<String, dynamic>>> myComplaints() async {
+    final response = await _dio.get<List<dynamic>>('/resident/complaints');
+    return (response.data ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> createComplaint({required String category, String? description}) async {
+    await _dio.post<void>(
+      '/resident/complaints',
+      data: {'category': category, 'description': ?description, 'mediaUrls': <String>[]},
+    );
+  }
+
+  Future<void> rateToday(int stars, {String? comment}) async {
+    await _dio.post<void>('/resident/ratings', data: {'stars': stars, 'comment': ?comment});
+  }
+
   Future<Map<String, dynamic>> driverAssignment() async {
     final response = await _dio.get<Map<String, dynamic>>('/driver/assignment');
     return response.data!;

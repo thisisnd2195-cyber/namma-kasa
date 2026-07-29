@@ -14,6 +14,7 @@ const NAV = [
   { href: "/fleet", label: "Fleet", superOnly: false },
   { href: "/live", label: "Live", superOnly: false },
   { href: "/review-queue", label: "Review queue", superOnly: false },
+  { href: "/complaints", label: "Complaints", superOnly: false },
 ];
 
 /**
