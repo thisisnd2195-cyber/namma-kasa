@@ -87,7 +87,6 @@ export interface RoutesTable {
   name: string;
   route_code: string;
   serviceable_area: Geometry;
-  path: Geometry | null;
   /** Learned from a completed trip's trail rather than drawn (FR-ROUTE-04). */
   recorded_path: Geometry | null;
   recorded_path_trip_id: string | null;

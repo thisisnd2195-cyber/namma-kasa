@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/map/map_view.dart';
@@ -37,6 +38,10 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
   bool _consented = false;
   bool _busy = false;
   String? _error;
+
+  /// Mirrors localeOverrideProvider so the form rebuilds in the chosen
+  /// language the moment it is picked (FR-RES-06).
+  String get _locale => ref.watch(localeOverrideProvider) ?? 'en';
 
   @override
   void dispose() {
@@ -90,7 +95,7 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
             landmark: _landmark.text.trim().isEmpty ? null : _landmark.text.trim(),
             lat: _pin.latitude,
             lng: _pin.longitude,
-            locale: 'en',
+            locale: _locale,
           );
         } on ApiException catch (e) {
           // Already registered: the same screen doubles as sign-in.
@@ -111,8 +116,9 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Resident sign in')),
+      appBar: AppBar(title: Text(l10n.residentSignIn)),
       body: switch (_step) {
         _Step.phone => _padded(_phoneStep()),
         _Step.code => _padded(_codeStep()),
@@ -142,17 +148,19 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
         ),
       );
 
-  Widget _phoneStep() => Column(
+  Widget _phoneStep() {
+    final l10n = L10n.of(context);
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('We will send you a code to confirm your number.'),
+          Text(l10n.weWillSendCode),
           const SizedBox(height: Tokens.space4),
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: 'Phone number',
+            decoration: InputDecoration(
+              labelText: l10n.phoneNumber,
               hintText: '919888800001',
             ),
           ),
@@ -162,19 +170,22 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
             child: Text(_busy ? 'Sending…' : 'Send code'),
           ),
         ],
-      );
+    );
+  }
 
-  Widget _codeStep() => Column(
+  Widget _codeStep() {
+    final l10n = L10n.of(context);
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Enter the 6-digit code sent to ${_phone.text}.'),
+          Text(l10n.enterCode(_phone.text)),
           const SizedBox(height: Tokens.space4),
           TextField(
             controller: _code,
             keyboardType: TextInputType.number,
             maxLength: 6,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Code'),
+            decoration: InputDecoration(labelText: l10n.codeLabel),
           ),
           FilledButton(
             onPressed: _busy ? null : _verify,
@@ -182,12 +193,14 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
           ),
           TextButton(
             onPressed: _busy ? null : () => setState(() => _step = _Step.phone),
-            child: const Text('Change number'),
+            child: Text(l10n.changeNumber),
           ),
         ],
-      );
+    );
+  }
 
   Widget _detailsStep() {
+    final l10n = L10n.of(context);
     return Column(
       children: [
         SizedBox(
@@ -218,34 +231,54 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (_error != null) _errorBox(),
+                // Asked first, and applied immediately, so the rest of this
+                // form is already in the resident's language (FR-RES-06).
+                Row(
+                  children: [
+                    Text(l10n.language, style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(width: Tokens.space3),
+                    SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(value: 'en', label: Text(l10n.languageEnglish)),
+                        ButtonSegment(value: 'kn', label: Text(l10n.languageKannada)),
+                      ],
+                      selected: {_locale},
+                      onSelectionChanged: (next) =>
+                          ref.read(localeOverrideProvider.notifier).state = next.first,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Tokens.space3),
                 Semantics(
                   liveRegion: true,
                   child: Text(
                     _pinMoved
-                        ? 'Pin set to ${_pin.latitude.toStringAsFixed(5)}, '
-                            '${_pin.longitude.toStringAsFixed(5)}'
-                        : 'Drag the map so the pin sits on your house.',
+                        ? l10n.pinSet(
+                            _pin.latitude.toStringAsFixed(5),
+                            _pin.longitude.toStringAsFixed(5),
+                          )
+                        : l10n.dragPin,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
                 TextField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Your name'),
+                  decoration: InputDecoration(labelText: l10n.yourName),
                 ),
                 TextField(
                   controller: _address,
-                  decoration: const InputDecoration(labelText: 'Address'),
+                  decoration: InputDecoration(labelText: l10n.address),
                 ),
                 TextField(
                   controller: _landmark,
-                  decoration: const InputDecoration(labelText: 'Landmark (optional)'),
+                  decoration: InputDecoration(labelText: l10n.landmarkOptional),
                 ),
                 TextField(
                   controller: _password,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Set a password',
-                    helperText: 'At least 8 characters',
+                  decoration: InputDecoration(
+                    labelText: l10n.setPassword,
+                    helperText: l10n.passwordHint,
                   ),
                 ),
                 const SizedBox(height: Tokens.space3),
@@ -255,14 +288,11 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
                   onChanged: (v) => setState(() => _consented = v ?? false),
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text(
-                    'I agree to share my phone number and house location so the app '
-                    'can tell me when the collection auto is near.',
-                  ),
+                  title: Text(l10n.consentText),
                 ),
                 FilledButton(
                   onPressed: _busy || !_consented || !_pinMoved ? null : _finish,
-                  child: Text(_busy ? 'Finishing…' : 'Finish'),
+                  child: Text(_busy ? l10n.finishing : l10n.finish),
                 ),
               ],
             ),

@@ -1,6 +1,11 @@
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { sql } from "kysely";
-import type { GeoJsonArea, Route } from "@namma-kasa/shared";
+import type {
+  GeoJsonArea,
+  RecordableTrip,
+  RecordedPath,
+  Route,
+} from "@namma-kasa/shared";
 import type { createRouteSchema, updateRouteSchema } from "@namma-kasa/shared";
 import type { z } from "zod";
 import { DB, type Db } from "../../db/db.module";
@@ -20,6 +25,9 @@ interface RouteRow {
   window_end: string;
   passes_per_day: number;
   waste_type_schedule: Record<string, string[]>;
+  recorded_path: string | null;
+  recorded_path_trip_id: string | null;
+  recorded_path_at: Date | null;
 }
 
 @Injectable()
@@ -41,6 +49,15 @@ export class RoutesService {
       windowEnd: row.window_end.slice(0, 5),
       passesPerDay: row.passes_per_day,
       wasteTypeSchedule: row.waste_type_schedule as Route["wasteTypeSchedule"],
+      // Written by recordPathFromTrip. Selected here because a value nobody
+      // can read back is not a recorded path, it is a write-only column.
+      recordedPath: row.recorded_path
+        ? {
+            geometry: JSON.parse(row.recorded_path) as RecordedPath["geometry"],
+            tripId: row.recorded_path_trip_id,
+            recordedAt: row.recorded_path_at ?? new Date(),
+          }
+        : null,
     };
   }
 
@@ -58,6 +75,9 @@ export class RoutesService {
         sql<string>`window_end::text`.as("window_end"),
         "passes_per_day",
         "waste_type_schedule",
+        sql<string | null>`ST_AsGeoJSON(recorded_path)`.as("recorded_path"),
+        "recorded_path_trip_id",
+        "recorded_path_at",
       ]);
   }
 
@@ -126,6 +146,44 @@ export class RoutesService {
     return this.get(id);
   }
 
+  /** Completed trips whose trail could become this route's path. */
+  async recordableTrips(routeId: string): Promise<RecordableTrip[]> {
+    const rows = await sql<{
+      id: string;
+      service_date: string;
+      pass_number: number;
+      registration_number: string;
+      position_count: string;
+      ended_at: Date | null;
+    }>`
+      SELECT t.id,
+             t.service_date::text AS service_date,
+             t.pass_number,
+             a.registration_number,
+             count(p.*)::text AS position_count,
+             t.ended_at
+      FROM trips t
+      JOIN autos a ON a.id = t.auto_id
+      LEFT JOIN location_pings p ON p.trip_id = t.id
+      WHERE t.route_id = ${routeId}::uuid
+        AND t.status = 'completed'
+      GROUP BY t.id, a.registration_number
+      -- Two points make a line but not a route; anything less cannot be used.
+      HAVING count(p.*) >= 2
+      ORDER BY t.ended_at DESC NULLS LAST
+      LIMIT 20
+    `.execute(this.db);
+
+    return rows.rows.map((row) => ({
+      id: row.id,
+      serviceDate: row.service_date,
+      passNumber: row.pass_number,
+      registrationNumber: row.registration_number,
+      positionCount: Number(row.position_count),
+      endedAt: row.ended_at,
+    }));
+  }
+
   /**
    * Adopt a completed trip's GPS trail as this route's path (FR-ROUTE-04).
    *
@@ -152,9 +210,13 @@ export class RoutesService {
 
     // Two points is the minimum for a line; a trip that never moved has no
     // path worth keeping, and ST_MakeLine would return null anyway.
+    // location_pings stores plain lat/lng doubles, not a geometry — the table
+    // is a Timescale hypertable and carries no id or geo column.
     const built = await sql<{ path: string | null }>`
       SELECT ST_AsGeoJSON(
-        ST_MakeLine(p.geo::geometry ORDER BY p.recorded_at)
+        ST_MakeLine(
+          ST_SetSRID(ST_MakePoint(p.lng, p.lat), 4326) ORDER BY p.recorded_at
+        )
       ) AS path
       FROM location_pings p
       WHERE p.trip_id = ${tripId}::uuid

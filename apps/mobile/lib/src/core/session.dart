@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -24,12 +25,12 @@ class Session {
 
   bool get isDriver => role == 'driver';
 
-  Session copyWith({String? accessToken, String? refreshToken}) => Session(
+  Session copyWith({String? accessToken, String? refreshToken, String? locale}) => Session(
         accessToken: accessToken ?? this.accessToken,
         refreshToken: refreshToken ?? this.refreshToken,
         userId: userId,
         role: role,
-        locale: locale,
+        locale: locale ?? this.locale,
         wardId: wardId,
       );
 
@@ -98,11 +99,33 @@ class SessionController extends StateNotifier<Session?> {
     state = next;
   }
 
+  /// The language the resident chose. Held here because it drives both the
+  /// UI (MaterialApp.locale) and the server's push copy, and those two must
+  /// not be allowed to disagree.
+  Future<void> setLocale(String locale) async {
+    final current = state;
+    if (current == null) return;
+    final next = current.copyWith(locale: locale);
+    await _store.write(next);
+    state = next;
+  }
+
   Future<void> signOut() async {
     await _store.clear();
     state = null;
   }
 }
+
+/// Set by the language chooser during registration, before any account exists
+/// to store the choice on.
+final localeOverrideProvider = StateProvider<String?>((ref) => null);
+
+/// Null means "follow the device", which is the only sensible default before
+/// the resident has told us anything.
+final localeProvider = Provider<Locale?>((ref) {
+  final chosen = ref.watch(localeOverrideProvider) ?? ref.watch(sessionProvider)?.locale;
+  return chosen == null ? null : Locale(chosen);
+});
 
 final sessionProvider = StateNotifierProvider<SessionController, Session?>(
   (ref) => SessionController(ref.watch(sessionStoreProvider)),

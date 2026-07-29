@@ -344,3 +344,32 @@ Adding `/driver/issues` renamed the generated Dart model for the shared
 `{lat, lng}` object, because the generator names inline schemas after whichever
 endpoint sorts first. It is now a named `GeoPoint` component, so the name no
 longer moves when a route is added.
+
+## Phase 13: Convergence
+
+- [X] T099 Surface `routes.recorded_path` on `routeSchema` and in `selectRoute()`, and give the portal a way to adopt a completed trip's trail, per FR-ROUTE-04 (partial) — T094 writes the column but nothing selects it and no page calls `POST /admin/routes/{id}/recorded-path`, so the feature is both unreachable and unobservable
+- [X] T100 Capture the resident's language during registration instead of hardcoding `locale: 'en'` in `apps/mobile/lib/src/resident/resident_auth_screen.dart` per FR-RES-06 (contradicts) — every account is stored as English, so the Kannada notification copy in `notify/templates.ts` can never be selected
+- [X] T101 Drive `MaterialApp.locale` from the signed-in user's `locale` and add an in-app language switch wired to the existing `updateSettings({locale})` per FR-RES-06 (partial) — the app currently follows the device locale and ignores the stored preference; depends on T100
+- [X] T102 Localize `resident_auth_screen.dart`, `feedback_screen.dart`, `settings_sheet.dart` and the remaining English strings in `resident_home_screen.dart` and `proximity.dart` per FR-RES-06 (partial) — 14 translated keys are defined and never referenced
+- [X] T103 Branch the first-run tracking wizard on the device manufacturer so each driver sees their own OEM's steps per FR-DRV-04 (partial) — one static paragraph currently names four OEMs to everybody
+- [X] T104 Drop the unused `routes.path` column or document why it stays alongside `recorded_path` per plan: data model (unrequested) — it is never read or written anywhere in the codebase
+
+### Phase 13 notes
+
+T099's test found that T094 had never worked. `recordPathFromTrip` selected
+`p.geo`, `p.id` and ordered by a column that does not exist — `location_pings`
+is a Timescale hypertable holding plain `lat`/`lng` doubles with no id and no
+geometry. It typechecked (Kysely raw `sql` is not checked against the schema),
+it passed contract coverage (the route was documented), and it had no test, so
+nothing ran it. The lesson is narrower than "write tests": a raw-SQL query with
+no test is unverified code regardless of what the type checker says.
+
+FR-RES-06 had been recorded as satisfied on the evidence that
+`app_localizations_kn.dart` existed. It did, and nothing selected it:
+registration hardcoded `locale: 'en'`, `MaterialApp` never set `locale:`, and
+14 translated keys were unreferenced. The test now asserts the wiring — that the
+stored preference reaches `MaterialApp`, and that each resident-facing key
+differs between the two bundles — rather than that translations exist.
+
+`routes.path` is dropped. FR-ROUTE-04 is served by `recorded_path`, which also
+carries the trip it came from and when it was adopted.

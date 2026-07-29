@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:namma_kasa/l10n/app_localizations.dart';
 import 'package:namma_kasa/main.dart';
@@ -6,7 +7,8 @@ import 'package:namma_kasa/src/core/theme.dart';
 
 void main() {
   testWidgets('entry screen offers both roles', (tester) async {
-    await tester.pumpWidget(const NammaKasaApp());
+    // NammaKasaApp reads the locale preference, so it needs a scope.
+    await tester.pumpWidget(const ProviderScope(child: NammaKasaApp()));
     expect(find.text('Login as Resident'), findsOneWidget);
     expect(find.text('Login as Driver'), findsOneWidget);
   });

@@ -1338,6 +1338,58 @@
                             "type": "string"
                           }
                         }
+                      },
+                      "recordedPath": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "geometry": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "LineString"
+                              },
+                              "coordinates": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "maxItems": 2,
+                                  "minItems": 2,
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "coordinates"
+                            ]
+                          },
+                          "tripId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
+                          "recordedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "geometry",
+                          "tripId",
+                          "recordedAt"
+                        ]
                       }
                     },
                     "required": [
@@ -1350,7 +1402,8 @@
                       "windowStart",
                       "windowEnd",
                       "passesPerDay",
-                      "wasteTypeSchedule"
+                      "wasteTypeSchedule",
+                      "recordedPath"
                     ]
                   }
                 }
@@ -1627,6 +1680,58 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "recordedPath": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "geometry": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "LineString"
+                            },
+                            "coordinates": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "prefixItems": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "coordinates"
+                          ]
+                        },
+                        "tripId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uuid"
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "geometry",
+                        "tripId",
+                        "recordedAt"
+                      ]
                     }
                   },
                   "required": [
@@ -1639,7 +1744,8 @@
                     "windowStart",
                     "windowEnd",
                     "passesPerDay",
-                    "wasteTypeSchedule"
+                    "wasteTypeSchedule",
+                    "recordedPath"
                   ]
                 }
               }
@@ -1921,6 +2027,58 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "recordedPath": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "geometry": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "LineString"
+                            },
+                            "coordinates": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "prefixItems": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "coordinates"
+                          ]
+                        },
+                        "tripId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uuid"
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "geometry",
+                        "tripId",
+                        "recordedAt"
+                      ]
                     }
                   },
                   "required": [
@@ -1933,7 +2091,8 @@
                     "windowStart",
                     "windowEnd",
                     "passesPerDay",
-                    "wasteTypeSchedule"
+                    "wasteTypeSchedule",
+                    "recordedPath"
                   ]
                 }
               }
@@ -1944,6 +2103,77 @@
           },
           "422": {
             "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/admin/routes/{id}/recordable-trips": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Completed trips whose trail this route could adopt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trips",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "serviceDate": {
+                        "type": "string"
+                      },
+                      "passNumber": {
+                        "type": "integer"
+                      },
+                      "registrationNumber": {
+                        "type": "string"
+                      },
+                      "positionCount": {
+                        "type": "integer"
+                      },
+                      "endedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "serviceDate",
+                      "passNumber",
+                      "registrationNumber",
+                      "positionCount",
+                      "endedAt"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2108,6 +2338,58 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "recordedPath": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "geometry": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "LineString"
+                            },
+                            "coordinates": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "prefixItems": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "coordinates"
+                          ]
+                        },
+                        "tripId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uuid"
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "geometry",
+                        "tripId",
+                        "recordedAt"
+                      ]
                     }
                   },
                   "required": [
@@ -2120,7 +2402,8 @@
                     "windowStart",
                     "windowEnd",
                     "passesPerDay",
-                    "wasteTypeSchedule"
+                    "wasteTypeSchedule",
+                    "recordedPath"
                   ]
                 }
               }
@@ -4767,6 +5050,58 @@
                 "type": "string"
               }
             }
+          },
+          "recordedPath": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "geometry": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "LineString"
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              "tripId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "recordedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "geometry",
+              "tripId",
+              "recordedAt"
+            ]
           }
         },
         "required": [
@@ -4779,7 +5114,8 @@
           "windowStart",
           "windowEnd",
           "passesPerDay",
-          "wasteTypeSchedule"
+          "wasteTypeSchedule",
+          "recordedPath"
         ]
       },
       "Operator": {

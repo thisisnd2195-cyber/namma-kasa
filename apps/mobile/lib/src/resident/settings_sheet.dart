@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
 import '../core/api_client.dart';
+import '../core/session.dart';
+import '../../l10n/app_localizations.dart';
 import '../core/theme.dart';
 
 /// How close the auto gets before the resident is told. Someone on a long
@@ -43,6 +45,18 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
     }
   }
 
+  /// Persisted server-side as well as locally, because the same value picks
+  /// the language of the push notifications (FR-RES-06).
+  Future<void> _setLocale(String locale) async {
+    try {
+      await ref.read(apiProvider).updateSettings(locale: locale);
+      await ref.read(sessionProvider.notifier).setLocale(locale);
+      ref.read(localeOverrideProvider.notifier).state = locale;
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
   Future<void> _save() async {
     setState(() {
       _busy = true;
@@ -61,6 +75,7 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = L10n.of(context);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -73,16 +88,27 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Alert me when the auto is', style: theme.textTheme.titleMedium),
+          Text(l10n.language, style: theme.textTheme.titleMedium),
+          const SizedBox(height: Tokens.space2),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(value: 'en', label: Text(l10n.languageEnglish)),
+              ButtonSegment(value: 'kn', label: Text(l10n.languageKannada)),
+            ],
+            selected: {ref.watch(sessionProvider)?.locale ?? 'en'},
+            onSelectionChanged: (next) => unawaited(_setLocale(next.first)),
+          ),
+          const SizedBox(height: Tokens.space4),
+          Text(l10n.alertMeWhen, style: theme.textTheme.titleMedium),
           const SizedBox(height: Tokens.space2),
           if (!_loaded)
             const Center(child: CircularProgressIndicator())
           else ...[
             Semantics(
               liveRegion: true,
-              label: 'Alert distance ${_radius.round()} metres',
+              label: l10n.alertDistance(_radius.round()),
               child: Text(
-                '${_radius.round()} m away',
+                l10n.metresAway(_radius.round()),
                 style: theme.textTheme.displaySmall,
                 textAlign: TextAlign.center,
               ),
@@ -92,12 +118,11 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
               min: 100,
               max: 1000,
               divisions: 18,
-              label: '${_radius.round()} m',
+              label: l10n.alertDistance(_radius.round()),
               onChanged: (value) => setState(() => _radius = value),
             ),
             Text(
-              'A longer distance gives you more time; a shorter one means fewer '
-              'alerts when the auto is only passing nearby.',
+              l10n.alertRadiusHelp,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -111,7 +136,7 @@ class _ResidentSettingsSheetState extends ConsumerState<ResidentSettingsSheet> {
           const SizedBox(height: Tokens.space4),
           FilledButton(
             onPressed: _busy || !_loaded ? null : _save,
-            child: Text(_busy ? 'Saving…' : 'Save'),
+            child: Text(_busy ? l10n.saving : l10n.save),
           ),
         ],
       ),

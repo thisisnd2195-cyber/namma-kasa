@@ -4,11 +4,105 @@ import { useCallback, useEffect, useState } from "react";
 import { AreaMap, type Area } from "@/components/AreaMap";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner, Field } from "@/app/wards/page";
-import type { Route, Ward } from "@namma-kasa/shared";
+import type { RecordableTrip, Route, Ward } from "@namma-kasa/shared";
+
+/** Dates cross the wire as ISO strings; Zod infers them as Date. */
+type WireTrip = Omit<RecordableTrip, "endedAt"> & { endedAt: string | null };
 import { api, readSession } from "@/lib/session";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WASTE_TYPES = ["wet", "dry", "sanitary", "hazardous", "ewaste"] as const;
+
+/**
+ * The route's driven path (FR-ROUTE-04). Drawing one by hand is slow and
+ * approximate; an auto has already driven the real thing, so this offers the
+ * completed trips and adopts one. Shows what is currently recorded, because a
+ * path an admin cannot see is one they cannot tell is wrong.
+ */
+function RecordedPath({ route, onRecorded }: { route: Route; onRecorded: () => void }) {
+  const [trips, setTrips] = useState<WireTrip[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const recorded = route.recordedPath;
+
+  async function openPicker() {
+    setError(null);
+    try {
+      setTrips(await api<WireTrip[]>(`/admin/routes/${route.id}/recordable-trips`));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load trips");
+    }
+  }
+
+  async function adopt(tripId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/admin/routes/${route.id}/recorded-path`, {
+        method: "POST",
+        body: JSON.stringify({ tripId }),
+      });
+      setTrips(null);
+      onRecorded();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not record the path");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
+          {recorded
+            ? `Path recorded ${new Date(recorded.recordedAt).toLocaleDateString()} · ${recorded.geometry.coordinates.length} points`
+            : "No path recorded"}
+        </span>
+        <button
+          type="button"
+          onClick={() => (trips ? setTrips(null) : void openPicker())}
+          className="rounded-full border border-[var(--color-outline)] px-3 py-1 text-[length:var(--text-label)] hover:bg-[var(--color-surface-alt)]"
+        >
+          {recorded ? "Replace from a trip" : "Record from a trip"}
+        </button>
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-1 text-[length:var(--text-label)] text-[var(--color-danger)]">
+          {error}
+        </p>
+      )}
+
+      {trips && (
+        <ul className="mt-2 space-y-1">
+          {trips.map((trip) => (
+            <li key={trip.id} className="flex items-center gap-2">
+              <span className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
+                {trip.serviceDate} · pass {trip.passNumber} · {trip.registrationNumber} ·{" "}
+                {trip.positionCount} points
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void adopt(trip.id)}
+                className="ml-auto rounded-full border border-[var(--color-outline)] px-3 py-1 text-[length:var(--text-label)] disabled:opacity-50"
+              >
+                Use this
+              </button>
+            </li>
+          ))}
+          {trips.length === 0 && (
+            <li className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
+              No completed trip on this route has enough positions yet.
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function RoutesPage() {
   const [wards, setWards] = useState<Ward[]>([]);
@@ -243,6 +337,7 @@ export default function RoutesPage() {
                     {route.passesPerDay === 1 ? "" : "es"}/day ·{" "}
                     {route.collectionDays.map((d) => WEEKDAYS[d - 1]).join(" ")}
                   </p>
+                  <RecordedPath route={route} onRecorded={loadRoutes} />
                 </li>
               ))}
               {routes.length === 0 && (

@@ -128,6 +128,13 @@ export class AdminGeoController {
     return this.routes.update(id, body);
   }
 
+  /** Trips whose trail this route could adopt (FR-ROUTE-04). */
+  @Get("routes/:id/recordable-trips")
+  @Roles("super_admin", "ward_admin")
+  recordableTrips(@Param("id") id: string) {
+    return this.routes.recordableTrips(id);
+  }
+
   /** Adopt a driven trip's trail as this route's path (FR-ROUTE-04). */
   @Post("routes/:id/recorded-path")
   @Roles("super_admin", "ward_admin")

@@ -116,4 +116,118 @@ class L10nEn extends L10n {
 
   @override
   String get rateThisCollection => 'The auto has been past. How was it?';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageKannada => 'ಕನ್ನಡ';
+
+  @override
+  String get yourName => 'Your name';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get landmarkOptional => 'Landmark (optional)';
+
+  @override
+  String get setPassword => 'Set a password';
+
+  @override
+  String get passwordHint => 'At least 8 characters';
+
+  @override
+  String get phoneNumber => 'Phone number';
+
+  @override
+  String get codeLabel => 'Code';
+
+  @override
+  String get changeNumber => 'Change number';
+
+  @override
+  String get weWillSendCode =>
+      'We will send you a code to confirm your number.';
+
+  @override
+  String enterCode(String phone) {
+    return 'Enter the 6-digit code sent to $phone.';
+  }
+
+  @override
+  String get residentSignIn => 'Resident sign in';
+
+  @override
+  String get consentText =>
+      'I agree to share my phone number and house location so the app can tell me when the collection auto is near.';
+
+  @override
+  String get dragPin => 'Drag the map so the pin sits on your house.';
+
+  @override
+  String pinSet(String lat, String lng) {
+    return 'Pin set to $lat, $lng';
+  }
+
+  @override
+  String get finish => 'Finish';
+
+  @override
+  String get finishing => 'Finishing…';
+
+  @override
+  String get alertMeWhen => 'Alert me when the auto is';
+
+  @override
+  String alertDistance(int metres) {
+    return '$metres m away';
+  }
+
+  @override
+  String get alertRadiusHelp =>
+      'A longer distance gives you more time; a shorter one means fewer alerts when the auto is only passing nearby.';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get whatWentWrong => 'What went wrong?';
+
+  @override
+  String get anythingElse => 'Anything else? (optional)';
+
+  @override
+  String get thanksForRating => 'Thanks for rating.';
+
+  @override
+  String get missedTodayBanner =>
+      'No auto reached your house before the window closed.';
+
+  @override
+  String get todayLabel => 'Today';
+
+  @override
+  String kmAway(String km) {
+    return '$km km away';
+  }
+
+  @override
+  String metresAway(int metres) {
+    return '$metres m away';
+  }
+
+  @override
+  String get alertSettings => 'Alert settings';
+
+  @override
+  String get missedComplaintPrefill =>
+      'No auto reached my house before the collection window closed today.';
 }

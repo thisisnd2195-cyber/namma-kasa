@@ -165,6 +165,18 @@ export const createRouteSchema = z.object({
 
 export const updateRouteSchema = createRouteSchema.partial().omit({ wardId: true });
 
+/** A driven trail adopted as the route's path (FR-ROUTE-04). */
+export const recordedPathSchema = z.object({
+  /** GeoJSON LineString; the shape the auto actually drove. */
+  geometry: z.object({
+    type: z.literal("LineString"),
+    coordinates: z.array(z.tuple([z.number(), z.number()])),
+  }),
+  tripId: uuidSchema.nullable(),
+  recordedAt: z.coerce.date(),
+});
+export type RecordedPath = z.infer<typeof recordedPathSchema>;
+
 export const routeSchema = z.object({
   id: uuidSchema,
   wardId: uuidSchema,
@@ -176,6 +188,8 @@ export const routeSchema = z.object({
   windowEnd: z.string(),
   passesPerDay: z.number().int(),
   wasteTypeSchedule: wasteScheduleSchema,
+  /** Null until an admin adopts a completed trip's trail (FR-ROUTE-04). */
+  recordedPath: recordedPathSchema.nullable(),
 });
 export type Route = z.infer<typeof routeSchema>;
 
@@ -326,3 +340,17 @@ export type MissedPickup = z.infer<typeof missedPickupSchema>;
 
 /** Adopting a driven trip's trail as the route's path (FR-ROUTE-04). */
 export const recordRoutePathSchema = z.object({ tripId: uuidSchema });
+
+/**
+ * Completed trips an admin can adopt a path from. Carries the position count
+ * because a trip with two pings makes a straight line, not a route.
+ */
+export const recordableTripSchema = z.object({
+  id: uuidSchema,
+  serviceDate: z.string(),
+  passNumber: z.number().int(),
+  registrationNumber: z.string(),
+  positionCount: z.number().int(),
+  endedAt: z.coerce.date().nullable(),
+});
+export type RecordableTrip = z.infer<typeof recordableTripSchema>;

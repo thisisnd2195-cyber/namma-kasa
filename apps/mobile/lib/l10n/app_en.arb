@@ -63,5 +63,53 @@
   "issueRoadBlocked": "Road blocked",
   "issueOther": "Something else",
   "issueSent": "Your Ward Admin has been told.",
-  "rateThisCollection": "The auto has been past. How was it?"
+  "rateThisCollection": "The auto has been past. How was it?",
+  "language": "Language",
+  "languageEnglish": "English",
+  "languageKannada": "ಕನ್ನಡ",
+  "yourName": "Your name",
+  "address": "Address",
+  "landmarkOptional": "Landmark (optional)",
+  "setPassword": "Set a password",
+  "passwordHint": "At least 8 characters",
+  "phoneNumber": "Phone number",
+  "codeLabel": "Code",
+  "changeNumber": "Change number",
+  "weWillSendCode": "We will send you a code to confirm your number.",
+  "enterCode": "Enter the 6-digit code sent to {phone}.",
+  "@enterCode": {
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "residentSignIn": "Resident sign in",
+  "consentText": "I agree to share my phone number and house location so the app can tell me when the collection auto is near.",
+  "dragPin": "Drag the map so the pin sits on your house.",
+  "pinSet": "Pin set to {lat}, {lng}",
+  "@pinSet": {
+    "placeholders": { "lat": { "type": "String" }, "lng": { "type": "String" } }
+  },
+  "finish": "Finish",
+  "finishing": "Finishing…",
+  "alertMeWhen": "Alert me when the auto is",
+  "alertDistance": "{metres} m away",
+  "@alertDistance": {
+    "placeholders": { "metres": { "type": "int" } }
+  },
+  "alertRadiusHelp": "A longer distance gives you more time; a shorter one means fewer alerts when the auto is only passing nearby.",
+  "save": "Save",
+  "saving": "Saving…",
+  "whatWentWrong": "What went wrong?",
+  "anythingElse": "Anything else? (optional)",
+  "thanksForRating": "Thanks for rating.",
+  "missedTodayBanner": "No auto reached your house before the window closed.",
+  "todayLabel": "Today",
+  "kmAway": "{km} km away",
+  "@kmAway": {
+    "placeholders": { "km": { "type": "String" } }
+  },
+  "metresAway": "{metres} m away",
+  "@metresAway": {
+    "placeholders": { "metres": { "type": "int" } }
+  },
+  "alertSettings": "Alert settings",
+  "missedComplaintPrefill": "No auto reached my house before the collection window closed today."
 }

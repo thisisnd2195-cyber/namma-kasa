@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import 'package:namma_kasa_api/api.dart' hide ApiException;
@@ -49,11 +50,17 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.missedToday) {
-      _description.text =
-          'No auto reached my house before the collection window closed today.';
-    }
     unawaited(_load());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Localized copy needs an inherited widget, so it cannot come from
+    // initState. Only prefill an untouched field.
+    if (widget.missedToday && _description.text.isEmpty) {
+      _description.text = L10n.of(context).missedComplaintPrefill;
+    }
   }
 
   @override
@@ -110,9 +117,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = L10n.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report a problem')),
+      appBar: AppBar(title: Text(l10n.reportProblem)),
       body: ListView(
         padding: const EdgeInsets.all(Tokens.space4),
         children: [
@@ -122,7 +130,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             _Notice(text: _notice!, background: Tokens.successContainer, color: Tokens.success),
 
           if (widget.canRateToday) ...[
-            Text("Rate today's collection", style: theme.textTheme.titleMedium),
+            Text(l10n.rateToday, style: theme.textTheme.titleMedium),
             const SizedBox(height: Tokens.space2),
             Row(
               children: [
@@ -139,11 +147,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               ],
             ),
             if (_stars != null)
-              Text('Thanks for rating.', style: theme.textTheme.bodyMedium),
+              Text(l10n.thanksForRating, style: theme.textTheme.bodyMedium),
             const Divider(height: Tokens.space8),
           ],
 
-          Text('What went wrong?', style: theme.textTheme.titleMedium),
+          Text(l10n.whatWentWrong, style: theme.textTheme.titleMedium),
           const SizedBox(height: Tokens.space2),
           RadioGroup<String>(
             groupValue: _category,
@@ -163,8 +171,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             controller: _description,
             maxLines: 3,
             maxLength: 2000,
-            decoration: const InputDecoration(
-              labelText: 'Anything else? (optional)',
+            decoration: InputDecoration(
+              labelText: l10n.anythingElse,
               alignLabelWithHint: true,
             ),
           ),
@@ -175,7 +183,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
           if (_complaints.isNotEmpty) ...[
             const Divider(height: Tokens.space8),
-            Text('Your complaints', style: theme.textTheme.titleMedium),
+            Text(l10n.yourComplaints, style: theme.textTheme.titleMedium),
             const SizedBox(height: Tokens.space2),
             for (final complaint in _complaints)
               Container(

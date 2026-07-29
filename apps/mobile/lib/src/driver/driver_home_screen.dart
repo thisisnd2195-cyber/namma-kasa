@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../core/api.dart';
@@ -12,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../core/theme.dart';
 import 'photo_capture.dart';
 import 'issue_sheet.dart';
+import 'oem_steps.dart';
 import 'trip_tracker.dart';
 
 /// The driver's whole day: what they are driving, where, and one big button.
@@ -65,18 +68,33 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
   }
 
   /// OEM battery managers silently kill unexempted apps, which is the
-  /// spec's top-listed risk. Asked once, before the first trip.
+  /// spec's top-listed risk. Asked once, before the first trip, with the steps
+  /// for this particular phone rather than a list of every brand (FR-DRV-04).
   Future<void> _runTrackingWizard() async {
+    final guidance = oemGuidanceFor(await _manufacturer());
+    if (!mounted) return;
+
     final proceed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Keep tracking alive'),
-        content: const Text(
-          'Your phone may stop sharing location when the screen is off.\n\n'
-          'Next you will be asked to allow notifications and to exempt this app '
-          'from battery optimisation. Please allow both.\n\n'
-          'On Xiaomi, Oppo, Vivo and Realme phones also enable Autostart for '
-          'Namma Kasa in Settings.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your phone may stop sharing location when the screen is off.'),
+            const SizedBox(height: Tokens.space3),
+            Text(
+              'On ${guidance.brand}:',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: Tokens.space1),
+            for (final step in guidance.steps)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Tokens.space1),
+                child: Text('• $step'),
+              ),
+          ],
         ),
         actions: [
           TextButton(
@@ -156,6 +174,17 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
       if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Null off Android, and on any failure — the generic wording is correct
+  /// everywhere, so a missing manufacturer is not worth an error.
+  Future<String?> _manufacturer() async {
+    try {
+      if (!Platform.isAndroid) return null;
+      return (await DeviceInfoPlugin().androidInfo).manufacturer;
+    } on Object {
+      return null;
     }
   }
 

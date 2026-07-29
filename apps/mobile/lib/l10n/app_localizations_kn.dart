@@ -118,4 +118,117 @@ class L10nKn extends L10n {
 
   @override
   String get rateThisCollection => 'ಆಟೋ ಬಂದು ಹೋಗಿದೆ. ಹೇಗಿತ್ತು?';
+
+  @override
+  String get language => 'ಭಾಷೆ';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageKannada => 'ಕನ್ನಡ';
+
+  @override
+  String get yourName => 'ನಿಮ್ಮ ಹೆಸರು';
+
+  @override
+  String get address => 'ವಿಳಾಸ';
+
+  @override
+  String get landmarkOptional => 'ಗುರುತು (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get setPassword => 'ಪಾಸ್‌ವರ್ಡ್ ಹೊಂದಿಸಿ';
+
+  @override
+  String get passwordHint => 'ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳು';
+
+  @override
+  String get phoneNumber => 'ಫೋನ್ ಸಂಖ್ಯೆ';
+
+  @override
+  String get codeLabel => 'ಕೋಡ್';
+
+  @override
+  String get changeNumber => 'ಸಂಖ್ಯೆ ಬದಲಿಸಿ';
+
+  @override
+  String get weWillSendCode => 'ನಿಮ್ಮ ಸಂಖ್ಯೆ ದೃಢೀಕರಿಸಲು ಕೋಡ್ ಕಳುಹಿಸುತ್ತೇವೆ.';
+
+  @override
+  String enterCode(String phone) {
+    return '$phone ಗೆ ಕಳುಹಿಸಿದ 6-ಅಂಕಿಯ ಕೋಡ್ ನಮೂದಿಸಿ.';
+  }
+
+  @override
+  String get residentSignIn => 'ನಿವಾಸಿ ಸೈನ್ ಇನ್';
+
+  @override
+  String get consentText =>
+      'ಕಸದ ಆಟೋ ಹತ್ತಿರ ಬಂದಾಗ ತಿಳಿಸಲು ನನ್ನ ಫೋನ್ ಸಂಖ್ಯೆ ಮತ್ತು ಮನೆಯ ಸ್ಥಳವನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ಒಪ್ಪುತ್ತೇನೆ.';
+
+  @override
+  String get dragPin => 'ನಿಮ್ಮ ಮನೆಯ ಮೇಲೆ ಪಿನ್ ಬರುವಂತೆ ನಕ್ಷೆಯನ್ನು ಸರಿಸಿ.';
+
+  @override
+  String pinSet(String lat, String lng) {
+    return 'ಪಿನ್ $lat, $lng ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ';
+  }
+
+  @override
+  String get finish => 'ಮುಗಿಸಿ';
+
+  @override
+  String get finishing => 'ಮುಗಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get alertMeWhen => 'ಆಟೋ ಈ ದೂರದಲ್ಲಿದ್ದಾಗ ತಿಳಿಸಿ';
+
+  @override
+  String alertDistance(int metres) {
+    return '$metres ಮೀ ದೂರ';
+  }
+
+  @override
+  String get alertRadiusHelp =>
+      'ಹೆಚ್ಚು ದೂರ ಎಂದರೆ ಹೆಚ್ಚು ಸಮಯ; ಕಡಿಮೆ ದೂರ ಎಂದರೆ ಆಟೋ ಪಕ್ಕದಲ್ಲಿ ಹಾದುಹೋದಾಗ ಕಡಿಮೆ ಸೂಚನೆಗಳು.';
+
+  @override
+  String get save => 'ಉಳಿಸಿ';
+
+  @override
+  String get saving => 'ಉಳಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get whatWentWrong => 'ಏನು ತಪ್ಪಾಯಿತು?';
+
+  @override
+  String get anythingElse => 'ಬೇರೆ ಏನಾದರೂ? (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get thanksForRating => 'ರೇಟಿಂಗ್‌ಗೆ ಧನ್ಯವಾದಗಳು.';
+
+  @override
+  String get missedTodayBanner =>
+      'ಸಂಗ್ರಹಣೆ ಸಮಯ ಮುಗಿಯುವ ಮೊದಲು ಯಾವ ಆಟೋ ಕೂಡ ನಿಮ್ಮ ಮನೆಗೆ ಬರಲಿಲ್ಲ.';
+
+  @override
+  String get todayLabel => 'ಇಂದು';
+
+  @override
+  String kmAway(String km) {
+    return '$km ಕಿಮೀ ದೂರ';
+  }
+
+  @override
+  String metresAway(int metres) {
+    return '$metres ಮೀ ದೂರ';
+  }
+
+  @override
+  String get alertSettings => 'ಸೂಚನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು';
+
+  @override
+  String get missedComplaintPrefill =>
+      'ಇಂದು ಸಂಗ್ರಹಣೆ ಸಮಯ ಮುಗಿಯುವ ಮೊದಲು ಯಾವ ಆಟೋ ಕೂಡ ನನ್ನ ಮನೆಗೆ ಬರಲಿಲ್ಲ.';
 }

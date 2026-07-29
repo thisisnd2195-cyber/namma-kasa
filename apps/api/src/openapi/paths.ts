@@ -35,6 +35,7 @@ import {
   presignRequestSchema,
   presignResponseSchema,
   recordRoutePathSchema,
+  recordableTripSchema,
   ratingSchema,
   residentHomeSchema,
   residentSettingsSchema,
@@ -220,6 +221,15 @@ export const apiPaths: ZodOpenApiPathsObject = {
       requestParams: { path: idParam },
       requestBody: json(openApiUpdateRoute),
       responses: { 200: ok("Updated", openApiRouteSchema), 409: problem, 422: problem },
+    },
+  },
+  "/admin/routes/{id}/recordable-trips": {
+    get: {
+      tags: ["admin"],
+      security: secured,
+      summary: "Completed trips whose trail this route could adopt",
+      requestParams: { path: idParam },
+      responses: { 200: ok("Trips", z.array(recordableTripSchema)) },
     },
   },
   "/admin/routes/{id}/recorded-path": {

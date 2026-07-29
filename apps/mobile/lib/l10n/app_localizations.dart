@@ -294,6 +294,204 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'The auto has been past. How was it?'**
   String get rateThisCollection;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageKannada.
+  ///
+  /// In en, this message translates to:
+  /// **'ಕನ್ನಡ'**
+  String get languageKannada;
+
+  /// No description provided for @yourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get yourName;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @landmarkOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark (optional)'**
+  String get landmarkOptional;
+
+  /// No description provided for @setPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a password'**
+  String get setPassword;
+
+  /// No description provided for @passwordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get passwordHint;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneNumber;
+
+  /// No description provided for @codeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get codeLabel;
+
+  /// No description provided for @changeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get changeNumber;
+
+  /// No description provided for @weWillSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send you a code to confirm your number.'**
+  String get weWillSendCode;
+
+  /// No description provided for @enterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to {phone}.'**
+  String enterCode(String phone);
+
+  /// No description provided for @residentSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resident sign in'**
+  String get residentSignIn;
+
+  /// No description provided for @consentText.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to share my phone number and house location so the app can tell me when the collection auto is near.'**
+  String get consentText;
+
+  /// No description provided for @dragPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the map so the pin sits on your house.'**
+  String get dragPin;
+
+  /// No description provided for @pinSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin set to {lat}, {lng}'**
+  String pinSet(String lat, String lng);
+
+  /// No description provided for @finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finish;
+
+  /// No description provided for @finishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing…'**
+  String get finishing;
+
+  /// No description provided for @alertMeWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me when the auto is'**
+  String get alertMeWhen;
+
+  /// No description provided for @alertDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{metres} m away'**
+  String alertDistance(int metres);
+
+  /// No description provided for @alertRadiusHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A longer distance gives you more time; a shorter one means fewer alerts when the auto is only passing nearby.'**
+  String get alertRadiusHelp;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @whatWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong?'**
+  String get whatWentWrong;
+
+  /// No description provided for @anythingElse.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else? (optional)'**
+  String get anythingElse;
+
+  /// No description provided for @thanksForRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for rating.'**
+  String get thanksForRating;
+
+  /// No description provided for @missedTodayBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'No auto reached your house before the window closed.'**
+  String get missedTodayBanner;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayLabel;
+
+  /// No description provided for @kmAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km away'**
+  String kmAway(String km);
+
+  /// No description provided for @metresAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{metres} m away'**
+  String metresAway(int metres);
+
+  /// No description provided for @alertSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert settings'**
+  String get alertSettings;
+
+  /// No description provided for @missedComplaintPrefill.
+  ///
+  /// In en, this message translates to:
+  /// **'No auto reached my house before the collection window closed today.'**
+  String get missedComplaintPrefill;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

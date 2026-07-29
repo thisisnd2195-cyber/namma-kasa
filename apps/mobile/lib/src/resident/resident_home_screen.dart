@@ -125,7 +125,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
         title: Text(l10n.residentHomeTitle),
         actions: [
           IconButton(
-            tooltip: 'Alert settings',
+            tooltip: l10n.alertSettings,
             icon: const Icon(Icons.tune),
             onPressed: () => showModalBottomSheet<void>(
               context: context,
@@ -216,13 +216,13 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                       ),
                     if (_ratedStars != null)
                       _Banner(
-                        text: 'Thanks for rating.',
+                        text: l10n.thanksForRating,
                         background: Tokens.successContainer,
                         color: Tokens.success,
                       ),
                     if (home?.missedToday ?? false)
                       _Banner(
-                        text: 'No auto reached your house before the window closed.',
+                        text: l10n.missedTodayBanner,
                         background: Tokens.warningContainer,
                         color: const Color(0xFF7A5300),
                       ),
@@ -290,7 +290,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                     _Card(
                       theme: theme,
                       children: [
-                        Text('Today', style: theme.textTheme.titleMedium),
+                        Text(l10n.todayLabel, style: theme.textTheme.titleMedium),
                         const SizedBox(height: Tokens.space2),
                         Wrap(
                           spacing: Tokens.space2,

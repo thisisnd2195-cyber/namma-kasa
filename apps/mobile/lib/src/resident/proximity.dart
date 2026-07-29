@@ -54,6 +54,6 @@ String distanceLabel(int metres, L10n l10n) {
   if (metres < atStreetThresholdM) return l10n.atYourStreet;
   final rounded = (metres / 50).round() * 50;
   return rounded >= 1000
-      ? '${(rounded / 1000).toStringAsFixed(1)} km away'
-      : '$rounded m away';
+      ? l10n.kmAway((rounded / 1000).toStringAsFixed(1))
+      : l10n.metresAway(rounded);
 }
