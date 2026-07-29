@@ -17,7 +17,7 @@
     "load-test": "tsx scripts/load-test.ts",
     "routes": "tsx scripts/list-routes.ts",
     "contracts:coverage": "tsx scripts/check-coverage.ts",
-    "coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.include='src/**'"
+    "coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.include='src/**' --coverage.exclude='src/main.ts' --coverage.exclude='src/db/types.ts' --coverage.exclude='src/openapi/**' --coverage.exclude='src/config/config.schema.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1096.0",
@@ -47,16 +47,21 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
+    "@nestjs/testing": "^11.1.28",
+    "@swc/core": "^1.15.46",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
+    "@types/supertest": "^7.2.1",
     "@types/ws": "^8.5.13",
     "@vitest/coverage-v8": "2.1.9",
     "node-pg-migrate": "^7.9.0",
     "pino-pretty": "^13.0.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.2",
     "typescript": "^5.8.0",
+    "unplugin-swc": "^1.5.9",
     "vitest": "^2.1.8"
   }
 }

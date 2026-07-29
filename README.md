@@ -85,11 +85,11 @@ docs/           Architecture and operations
 
 ```sh
 pnpm typecheck && pnpm lint && pnpm build   # TS workspaces
-pnpm --filter @namma-kasa/api test          # 143 tests against live Postgres/Redis/EMQX/MinIO
+pnpm --filter @namma-kasa/api test          # 227 tests against live Postgres/Redis/EMQX/MinIO
 pnpm --filter @namma-kasa/api coverage      # line coverage by file
 pnpm contracts:check                        # OpenAPI in sync, and every served route documented
 pnpm contracts:generate                     # regenerate OpenAPI + Dart client
-cd apps/mobile && flutter analyze && flutter test   # 28 tests
+cd apps/mobile && flutter analyze && flutter test   # 49 tests
 ```
 
 ## Status
@@ -100,9 +100,10 @@ authorization with audit logging, the ward/route/fleet admin surface, driver tri
 tracking with MQTT ingest, the resident live map, proximity and arrival alerts,
 complaints with SLA tracking, ratings, missed-pickup detection, and DPDP erasure.
 
-108 of 110 tasks are done. The two that are not need credentials rather than
-code — Firebase for push (T066) and an OAuth client id for Google Sign-In (T074).
-Both are described under Known gaps in [docs/operations.md](docs/operations.md).
+All 114 tasks are done. Push and Google Sign-In are implemented behind seams
+with working fakes, so the flows are complete and tested; supplying a Firebase
+project and an OAuth client id swaps in the live transport without touching a
+caller. See Known gaps in [docs/operations.md](docs/operations.md).
 
 Not yet built, and deliberately deferred past pilot: infrastructure-as-code,
 blue-green deploys and PITR.

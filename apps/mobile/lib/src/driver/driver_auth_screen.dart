@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/device.dart';
+import '../core/google_auth.dart';
 import '../core/session.dart';
 import '../core/theme.dart';
 import 'driver_home_screen.dart';
@@ -31,6 +32,16 @@ class _DriverAuthScreenState extends ConsumerState<DriverAuthScreen> {
   bool _busy = false;
   bool _consented = false;
   String? _error;
+
+  /// Set once Google Sign-In completes, replacing the password entirely
+  /// (FR-AUTH-03: exactly one credential path).
+  String? _googleIdToken;
+
+  Future<void> _signInWithGoogle() => _run(() async {
+        final token = await ref.read(googleAuthProvider).signIn();
+        if (token == null) return; // backed out
+        if (mounted) setState(() => _googleIdToken = token);
+      });
 
   @override
   void dispose() {
@@ -80,19 +91,23 @@ class _DriverAuthScreenState extends ConsumerState<DriverAuthScreen> {
         try {
           session = await api.registerDriver(
             verificationToken: _verificationToken!,
-            password: _password.text,
             deviceId: deviceId,
             locale: 'kn',
+            password: _googleIdToken == null ? _password.text : null,
+            googleIdToken: _googleIdToken,
           );
         } on ApiException catch (e) {
           // Already has an account: the same screen doubles as sign-in after a
           // reinstall or a new device.
           if (e.statusCode != 409) rethrow;
-          session = await api.login(
-            phone: _phone.text.trim(),
-            password: _password.text,
-            deviceId: deviceId,
-          );
+          final googleIdToken = _googleIdToken;
+          session = googleIdToken == null
+              ? await api.login(
+                  phone: _phone.text.trim(),
+                  password: _password.text,
+                  deviceId: deviceId,
+                )
+              : await api.loginWithGoogle(idToken: googleIdToken, deviceId: deviceId);
         }
         await ref.read(sessionProvider.notifier).signIn(session);
         if (mounted) {
@@ -179,14 +194,38 @@ class _DriverAuthScreenState extends ConsumerState<DriverAuthScreen> {
   Widget _credentialStep(ThemeData theme) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            controller: _password,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Set a password',
-              helperText: 'At least 8 characters',
+          if (_googleIdToken == null) ...[
+            TextField(
+              controller: _password,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Set a password',
+                helperText: 'At least 8 characters',
+              ),
             ),
-          ),
+            if (ref.read(googleAuthProvider).isConfigured) ...[
+              const SizedBox(height: Tokens.space2),
+              OutlinedButton.icon(
+                key: const Key('driver-google-sign-in'),
+                // Glove-friendly, like every other driver control (FR-DRV-02).
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                onPressed: _busy ? null : _signInWithGoogle,
+                icon: const Icon(Icons.account_circle_outlined),
+                label: const Text('Continue with Google'),
+              ),
+            ],
+          ] else
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Tokens.success),
+                const SizedBox(width: Tokens.space2),
+                const Expanded(child: Text('Google account connected')),
+                TextButton(
+                  onPressed: _busy ? null : () => setState(() => _googleIdToken = null),
+                  child: const Text('Change'),
+                ),
+              ],
+            ),
           const SizedBox(height: Tokens.space4),
           // DPDP requires consent to be explicit and specific about what is
           // collected and when (NFR-04, CHK009).

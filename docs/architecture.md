@@ -270,11 +270,28 @@ notification end-to-end before release. `apps/api/test/end-to-end.spec.ts` is
 that gate: it publishes over MQTT exactly as `trip_tracker.dart` does and
 asserts both the resident's WebSocket frame and the queued alert.
 
-Run `pnpm --filter @namma-kasa/api coverage` for the current picture. Coverage
-is a script rather than an ad-hoc command because reading code for these gaps
-failed repeatedly — three separate defects were found only by measuring what the
-tests actually execute, including one endpoint that had never worked at all and
-still passed typecheck, lint and contract coverage.
+`apps/api/test/http*.spec.ts` boot the real `AppModule` and drive it over HTTP,
+so controllers, guards, the validation pipe and the audit interceptor execute
+against real requests. That matters because authorization lives there: a service
+that refuses correctly is no use if the route never reaches it. Booting the app
+in a test immediately found a module that had never been exported, which meant
+the API could not start — after 172 tests, a clean typecheck, lint, build and
+contract check had all passed.
+
+Run `pnpm --filter @namma-kasa/api coverage` for the current picture (~86% lines).
+Coverage is a script rather than an ad-hoc command because reading code for these
+gaps failed repeatedly — several defects were found only by measuring what the
+tests actually execute, including one endpoint that had never worked at all.
+
+Two things about the test harness, both load-bearing:
+
+- `unplugin-swc` is in `vitest.config.ts` because Nest resolves constructor
+  dependencies from `design:paramtypes`, which esbuild does not emit. Without it
+  every injected dependency is `undefined`.
+- `@namma-kasa/shared` is aliased to its source rather than its CJS `dist`. Left
+  as dist it loads a second copy of zod, so a `ZodError` from a shared schema is
+  not an instance of the one `ProblemFilter` checks, and every validation failure
+  renders 500 instead of 422 — under test only.
 
 Two things that make test failures silent, worth knowing before debugging one:
 

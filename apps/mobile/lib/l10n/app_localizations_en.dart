@@ -230,4 +230,10 @@ class L10nEn extends L10n {
   @override
   String get missedComplaintPrefill =>
       'No auto reached my house before the collection window closed today.';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get googleConnected => 'Google account connected';
 }

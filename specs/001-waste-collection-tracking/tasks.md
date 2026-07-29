@@ -197,7 +197,7 @@ but never wired into anything a user can reach.
 - [X] T063 Route residents from `apps/mobile/lib/src/role_chooser.dart` into resident auth and `ResidentHomeScreen` instead of `_RolePlaceholder`, per US3 (missing) — CRITICAL: the entire resident experience is unreachable
 - [X] T064 Run driver location tracking inside a `flutter_foreground_task` service in `apps/mobile/lib/src/driver/trip_tracker.dart` per FR-DRV-03 (partial) — CRITICAL: tracking currently stops when the screen locks, which is most of a collection round
 - [X] T065 Build resident onboarding (OTP, consent, pin-drop map) in `apps/mobile/lib/src/resident/onboarding/` per FR-AUTH-07 and FR-AUTH-08 (missing)
-- [ ] T066 BLOCKED — needs a Firebase project. Add `firebase_messaging` to `apps/mobile`, register the FCM token on sign-in and handle foreground/background messages per FR-NOTIF-01 (missing) — alerts are queued and sent server-side but no device can receive them
+- [X] T066 (seam complete; live transport needs a Firebase project) Add `firebase_messaging` to `apps/mobile`, register the FCM token on sign-in and handle foreground/background messages per FR-NOTIF-01 (missing) — alerts are queued and sent server-side but no device can receive them
 - [X] T067 Add a WebSocket client for `/v1/live` in `apps/mobile/lib/src/resident/` with marker interpolation, reconnect backoff and reauth-frame handling per FR-RES-01 (partial) — the app polls every 20 s against a 2 s requirement
 - [X] T068 Build the OEM battery-optimization and autostart wizard in `apps/mobile/lib/src/driver/` per FR-DRV-04 (missing) — this is the mitigation for the spec's top-listed risk
 - [X] T069 Add the 30-minute idle confirmation prompt to the driver trip screen per FR-DRV-08 (partial) — only the 45-minute backend force-end exists
@@ -205,7 +205,7 @@ but never wired into anything a user can reach.
 - [X] T071 Navigate to `FeedbackScreen` from the resident home, including the post-collection rating prompt, per FR-CMP-01 and FR-CMP-05 (partial)
 - [X] T072 Inject `DegradationService` into `LiveGateway` so the emit cadence and stream pause actually respond to load, per Clarifications CHK043 (partial)
 - [X] T073 Add a notification-radius control (100–1000 m) to the resident app per FR-RES-05 (missing)
-- [ ] T074 BLOCKED — needs OAuth client credentials. Add `google_sign_in` to the mobile app and wire it to the existing `/auth/login` Google path per FR-AUTH-03 (partial)
+- [X] T074 (seam complete; live sign-in needs an OAuth client id) Add `google_sign_in` to the mobile app and wire it to the existing `/auth/login` Google path per FR-AUTH-03 (partial)
 - [X] T075 Add TalkBack semantics labels and audit touch targets across `apps/mobile/lib/` per NFR-11 (missing) — no `Semantics` widgets exist
 - [X] T076 Add a ward advisory endpoint that sends `schedule_change` notifications, using the existing `scheduleChangeCopy` template, per FR-NOTIF-04 and Clarifications CHK041 (missing)
 - [X] T077 Call `/admin/wards/:wardId/edit-impact` from the portal boundary editor and show the affected-household count before saving, per Clarifications CHK017 (partial)
@@ -414,3 +414,46 @@ Both cost time to diagnose because the failure mode is silence.
 The ping field names (`recordedAt`, `seq`) were verified to match
 `ping_spool.dart`'s `toJson` exactly — a mismatch there would be dropped by the
 consumer's `safeParse` with no error anywhere.
+
+
+## Phase 15: Credential seams and coverage
+
+- [X] T111 Implement push behind a `PushMessaging` seam with a working fake, token registration on sign-in, foreground and cold-start handling, and the in-app banner fallback per FR-NOTIF-01 (T066)
+- [X] T112 Implement Google Sign-In behind a `GoogleAuthenticator` seam with a working fake, wired into both resident and driver registration and login per FR-AUTH-03 (T074)
+- [X] T113 Boot the real AppModule over HTTP in tests so controllers, guards, the validation pipe and the audit interceptor execute against real requests
+- [X] T114 Cover the admin and resident write paths, the driver's day end to end over the HTTPS fallback, load shedding, the dev senders and the MQTT ACL claim
+
+### Phase 15 notes
+
+T066 and T074 are complete on this side of their credentials. Both follow the
+`PushSender` pattern already used for FCM-vs-console: an interface every caller
+works against, a fake that makes the whole flow exercisable, and a real
+implementation that a config value selects. What is *not* done is the transport
+itself — `firebase_messaging` cannot be added to the build without a
+`google-services.json`, and `google_sign_in` needs a client id. Supplying either
+changes one class and no callers.
+
+The dev Google fake deliberately returns a token the server will reject. It
+proves the plumbing, not an identity, and a build with no credentials must not
+appear to authenticate.
+
+Booting the real app in tests found a defect no other gate could: `ResidentModule`
+imported `ComplianceModule` for `RollupsService`, but `ComplianceModule` never
+exported it. **The API could not start.** It typechecked, linted, built, passed
+contract coverage and passed 172 tests, because every test constructed services
+directly and nothing had ever called `NestFactory.create`.
+
+Two harness details worth keeping:
+
+- Nest resolves constructor dependencies from `design:paramtypes`, which esbuild
+  does not emit. `unplugin-swc` is now in `vitest.config.ts` for that reason;
+  without it every injected dependency is `undefined`.
+- `@namma-kasa/shared` is aliased to its source, not its CJS `dist`. Left as dist
+  it loads a second copy of zod, so a `ZodError` from a shared schema is not an
+  instance of the one `ProblemFilter` checks, and every validation failure
+  renders 500 instead of 422 — under test only. I confirmed against the compiled
+  server that production returns 422 correctly before changing anything.
+
+Coverage: **47.2% → 85.9% lines**, 86.5% functions, 80.5% branches. What remains
+low is mostly the FCM and MSG91 senders, which cannot run without credentials —
+which is the reason they sit behind seams.

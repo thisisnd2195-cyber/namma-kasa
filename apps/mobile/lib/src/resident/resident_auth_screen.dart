@@ -6,6 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../core/api.dart';
 import '../core/api_client.dart';
 import '../core/map/map_view.dart';
+import '../core/google_auth.dart';
+import '../core/notifications.dart';
 import '../core/session.dart';
 import '../core/theme.dart';
 import 'resident_home_screen.dart';
@@ -42,6 +44,16 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
   /// Mirrors localeOverrideProvider so the form rebuilds in the chosen
   /// language the moment it is picked (FR-RES-06).
   String get _locale => ref.watch(localeOverrideProvider) ?? 'en';
+
+  /// Set once the resident completes Google Sign-In, which replaces the
+  /// password field entirely (FR-AUTH-03: exactly one credential path).
+  String? _googleIdToken;
+
+  Future<void> _signInWithGoogle() => _run(() async {
+        final token = await ref.read(googleAuthProvider).signIn();
+        if (token == null) return; // backed out
+        if (mounted) setState(() => _googleIdToken = token);
+      });
 
   @override
   void dispose() {
@@ -89,24 +101,30 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
         try {
           session = await api.registerResident(
             verificationToken: _verificationToken!,
-            password: _password.text,
             fullName: _name.text.trim(),
             addressLine: _address.text.trim(),
             landmark: _landmark.text.trim().isEmpty ? null : _landmark.text.trim(),
             lat: _pin.latitude,
             lng: _pin.longitude,
             locale: _locale,
+            password: _googleIdToken == null ? _password.text : null,
+            googleIdToken: _googleIdToken,
           );
         } on ApiException catch (e) {
           // Already registered: the same screen doubles as sign-in.
           if (e.statusCode != 409) rethrow;
-          session = await api.login(
-            phone: _phone.text.trim(),
-            password: _password.text,
-            deviceId: 'resident',
-          );
+          final googleIdToken = _googleIdToken;
+          session = googleIdToken == null
+              ? await api.login(
+                  phone: _phone.text.trim(),
+                  password: _password.text,
+                  deviceId: 'resident',
+                )
+              : await api.loginWithGoogle(idToken: googleIdToken, deviceId: 'resident');
         }
         await ref.read(sessionProvider.notifier).signIn(session);
+        // Registers the device for push, or settles on the in-app banner.
+        await ref.read(alertProvider.notifier).start();
         if (mounted) {
           await Navigator.of(context).pushReplacement(
             MaterialPageRoute<void>(builder: (_) => const ResidentHomeScreen()),
@@ -273,14 +291,36 @@ class _ResidentAuthScreenState extends ConsumerState<ResidentAuthScreen> {
                   controller: _landmark,
                   decoration: InputDecoration(labelText: l10n.landmarkOptional),
                 ),
-                TextField(
-                  controller: _password,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.setPassword,
-                    helperText: l10n.passwordHint,
+                if (_googleIdToken == null) ...[
+                  TextField(
+                    controller: _password,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.setPassword,
+                      helperText: l10n.passwordHint,
+                    ),
                   ),
-                ),
+                  if (ref.read(googleAuthProvider).isConfigured) ...[
+                    const SizedBox(height: Tokens.space2),
+                    OutlinedButton.icon(
+                      key: const Key('google-sign-in'),
+                      onPressed: _busy ? null : _signInWithGoogle,
+                      icon: const Icon(Icons.account_circle_outlined),
+                      label: Text(l10n.continueWithGoogle),
+                    ),
+                  ],
+                ] else
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Tokens.success),
+                      const SizedBox(width: Tokens.space2),
+                      Expanded(child: Text(l10n.googleConnected)),
+                      TextButton(
+                        onPressed: _busy ? null : () => setState(() => _googleIdToken = null),
+                        child: Text(l10n.changeNumber),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: Tokens.space3),
                 // DPDP consent must name what is collected and why (NFR-04).
                 CheckboxListTile(

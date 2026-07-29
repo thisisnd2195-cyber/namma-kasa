@@ -87,9 +87,9 @@ Everything below must pass before a merge.
 ```sh
 pnpm typecheck && pnpm lint && pnpm build
 pnpm contracts:check                              # OpenAPI in sync + every route documented
-pnpm --filter @namma-kasa/api test                # 143 tests, needs Postgres/Redis/EMQX/MinIO
-pnpm --filter @namma-kasa/api coverage            # line coverage by file
-cd apps/mobile && flutter analyze && flutter test # 28 tests
+pnpm --filter @namma-kasa/api test                # 227 tests, needs Postgres/Redis/EMQX/MinIO
+pnpm --filter @namma-kasa/api coverage            # line coverage by file (currently ~86%)
+cd apps/mobile && flutter analyze && flutter test # 49 tests
 ```
 
 The API tests run against **live infrastructure**, not mocks, and share one
@@ -224,13 +224,34 @@ reason.
 
 ## Known gaps
 
-Two features are implemented server-side but cannot be finished without
-credentials:
+Two features are complete on this side of a credential, and inert without one.
+Each sits behind an interface with a working fake, so the flow is built and
+tested and only the transport is missing.
 
-- **Push notifications (T066)** need a Firebase project. Alerts queue correctly
-  and the outbox drains, but with `PUSH_SENDER` unset no device receives them.
-- **Google Sign-In (T074)** needs an OAuth client id. The `/auth/login` Google
-  path exists and works; the mobile app cannot initiate it.
+**Push notifications (T066).** Alerts queue and the outbox drains. The app
+registers a token on sign-in, handles foreground and cold-start messages, and
+falls back to an in-app banner when there is no token — which is the state
+today, because `FakePushMessaging` reports itself unconfigured.
+
+To turn on: create a Firebase project, add `google-services.json`, add the
+`firebase_messaging` package, fill in `FirebasePushMessaging` in
+`apps/mobile/lib/src/core/push_messaging.dart`, and build with
+`--dart-define=FIREBASE_CONFIGURED=true`. Server-side, set `PUSH_SENDER=fcm` and
+`FCM_SERVICE_ACCOUNT_JSON`. No caller changes.
+
+**Google Sign-In (T074).** The backend already verifies id tokens against
+`GOOGLE_CLIENT_ID` and creates or matches an account. The app has the button,
+the credential switch and both registration paths; without a client id the
+button does not render, because a build that cannot authenticate must not offer
+a dead control.
+
+To turn on: create an OAuth client, add the `google_sign_in` package, fill in
+`PlatformGoogleAuthenticator` in `apps/mobile/lib/src/core/google_auth.dart`,
+and build with `--dart-define=GOOGLE_CLIENT_ID=...`. Set the same value in the
+API's environment.
+
+The development fake returns a token the server will *reject*. That is
+deliberate: it proves the plumbing, not an identity.
 
 **Sahaaya 2.0 sync (FR-CMP-04) is a seam, not an integration.** BBMP has
 published no contract, so the feature flag, the BBMP-only eligibility rule and

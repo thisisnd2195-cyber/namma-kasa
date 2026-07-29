@@ -43,6 +43,6 @@ export class ComplianceController {
 @Module({
   controllers: [DashboardsController, ComplianceController],
   providers: [RollupsService, ComplianceService, MetricsService],
-  exports: [ComplianceService, MetricsService],
+  exports: [ComplianceService, MetricsService, RollupsService],
 })
 export class ComplianceModule {}

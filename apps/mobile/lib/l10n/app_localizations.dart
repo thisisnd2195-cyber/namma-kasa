@@ -492,6 +492,18 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'No auto reached my house before the collection window closed today.'**
   String get missedComplaintPrefill;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @googleConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Google account connected'**
+  String get googleConnected;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

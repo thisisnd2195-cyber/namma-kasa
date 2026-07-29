@@ -111,5 +111,7 @@
     "placeholders": { "metres": { "type": "int" } }
   },
   "alertSettings": "Alert settings",
-  "missedComplaintPrefill": "No auto reached my house before the collection window closed today."
+  "missedComplaintPrefill": "No auto reached my house before the collection window closed today.",
+  "continueWithGoogle": "Continue with Google",
+  "googleConnected": "Google account connected"
 }

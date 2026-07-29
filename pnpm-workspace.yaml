@@ -10,3 +10,4 @@ allowBuilds:
   argon2: true
   '@firebase/util': true
   protobufjs: true
+  '@swc/core': true

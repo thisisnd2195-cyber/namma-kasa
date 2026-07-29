@@ -65,5 +65,7 @@
   "kmAway": "{km} ಕಿಮೀ ದೂರ",
   "metresAway": "{metres} ಮೀ ದೂರ",
   "alertSettings": "ಸೂಚನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
-  "missedComplaintPrefill": "ಇಂದು ಸಂಗ್ರಹಣೆ ಸಮಯ ಮುಗಿಯುವ ಮೊದಲು ಯಾವ ಆಟೋ ಕೂಡ ನನ್ನ ಮನೆಗೆ ಬರಲಿಲ್ಲ."
+  "missedComplaintPrefill": "ಇಂದು ಸಂಗ್ರಹಣೆ ಸಮಯ ಮುಗಿಯುವ ಮೊದಲು ಯಾವ ಆಟೋ ಕೂಡ ನನ್ನ ಮನೆಗೆ ಬರಲಿಲ್ಲ.",
+  "continueWithGoogle": "Google ಮೂಲಕ ಮುಂದುವರಿಯಿರಿ",
+  "googleConnected": "Google ಖಾತೆ ಸಂಪರ್ಕಗೊಂಡಿದೆ"
 }

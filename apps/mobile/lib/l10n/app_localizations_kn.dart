@@ -231,4 +231,10 @@ class L10nKn extends L10n {
   @override
   String get missedComplaintPrefill =>
       'ಇಂದು ಸಂಗ್ರಹಣೆ ಸಮಯ ಮುಗಿಯುವ ಮೊದಲು ಯಾವ ಆಟೋ ಕೂಡ ನನ್ನ ಮನೆಗೆ ಬರಲಿಲ್ಲ.';
+
+  @override
+  String get continueWithGoogle => 'Google ಮೂಲಕ ಮುಂದುವರಿಯಿರಿ';
+
+  @override
+  String get googleConnected => 'Google ಖಾತೆ ಸಂಪರ್ಕಗೊಂಡಿದೆ';
 }

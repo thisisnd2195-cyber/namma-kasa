@@ -48,21 +48,32 @@ class Api {
 
   Future<Session> registerDriver({
     required String verificationToken,
-    required String password,
     required String deviceId,
     required String locale,
+    String? password,
+    String? googleIdToken,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/auth/register',
       data: {
         'role': 'driver',
         'verificationToken': verificationToken,
-        'credential': {'password': password},
+        'credential': _credential(password: password, googleIdToken: googleIdToken),
         'profile': {'locale': locale, 'consent': true},
         'deviceId': deviceId,
       },
     );
     return _toSession(response);
+  }
+
+  /// Exactly one credential path is set up after phone verification
+  /// (FR-AUTH-03), so this refuses to guess when given both or neither.
+  static Map<String, dynamic> _credential({String? password, String? googleIdToken}) {
+    if (googleIdToken != null && googleIdToken.isNotEmpty) {
+      return {'googleIdToken': googleIdToken};
+    }
+    if (password != null && password.isNotEmpty) return {'password': password};
+    throw ArgumentError('Provide either a password or a Google id token');
   }
 
   Future<Session> login({
@@ -73,6 +84,19 @@ class Api {
     final response = await _dio.post<Map<String, dynamic>>(
       '/auth/login',
       data: {'phone': phone, 'password': password, 'deviceId': deviceId},
+    );
+    return _toSession(response);
+  }
+
+  /// Sign in with a Google id token (FR-AUTH-03/04). The server verifies the
+  /// token against its own client id and matches it to an existing account.
+  Future<Session> loginWithGoogle({
+    required String idToken,
+    required String deviceId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/login',
+      data: {'googleIdToken': idToken, 'deviceId': deviceId},
     );
     return _toSession(response);
   }
@@ -95,20 +119,21 @@ class Api {
 
   Future<Session> registerResident({
     required String verificationToken,
-    required String password,
     required String fullName,
     required String addressLine,
     String? landmark,
     required double lat,
     required double lng,
     required String locale,
+    String? password,
+    String? googleIdToken,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/auth/register',
       data: {
         'role': 'resident',
         'verificationToken': verificationToken,
-        'credential': {'password': password},
+        'credential': _credential(password: password, googleIdToken: googleIdToken),
         'profile': {
           'fullName': fullName,
           'addressLine': addressLine,
