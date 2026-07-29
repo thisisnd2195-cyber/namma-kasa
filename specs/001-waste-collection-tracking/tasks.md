@@ -34,6 +34,14 @@ equivalent in capability:
   buys nothing; `test/helpers/db.ts` wraps every test in a rolled-back transaction for
   isolation. Point `TEST_DATABASE_URL` at any throwaway database in CI.
 
+- **T011 uses the plain `dart` OpenAPI generator, not `dart-dio`.** dart-dio needs a second
+  build_runner pass plus json_serializable and copy_with_extension; the plain generator emits
+  self-contained models with no extra toolchain, which is the simpler thing that works at this
+  contract size (Principle I). The client is a path-dependency package at
+  `apps/mobile/packages/namma_kasa_api`, not inside `lib/`, because a nested package under
+  `lib/` breaks Dart's layout rules. Regenerate with `pnpm contracts:generate`; CI guards drift
+  with `pnpm contracts:check`. Requires a JDK (`brew install openjdk`).
+
 ## Phase 1: Setup (environment + repo restructure per research R13)
 
 - [X] T001 Install prerequisites: Docker Desktop and Flutter SDK (stable); verify `docker compose version` and `flutter doctor` pass on this machine
@@ -49,11 +57,11 @@ equivalent in capability:
 - [X] T008 Set up Kysely in `apps/api/src/db/` with generated DB types and a Testcontainers harness in `apps/api/test/` proving migrations apply and triggers fire
 - [X] T009 Auth module in `apps/api/src/modules/auth/`: OTP send/verify (Redis limits per FR-AUTH-02, console sender + MSG91 `OtpSender` interface), register (resident/driver paths, driver pre-provision check FR-AUTH-05), login (password argon2id / Google ID-token), JWT 15-min access + rotating refresh with reuse revocation, driver single-device rule (Clarifications CHK012)
 - [X] T010 Authorization guards in `apps/api/src/modules/auth/guards/`: role guard + ward-scope guard applied globally to `/v1/admin/*` (FR-WARD-06), audit-log interceptor writing admin mutations to `audit_log` table (Clarifications CHK014)
-- [ ] T011 [P] Contract pipeline: zod-openapi emitter in `apps/api/src/openapi/`, `scripts/generate-dart-client.sh` (openapi-generator dart-dio → `apps/mobile/lib/src/api/`), and `pnpm contracts:check` drift gate wired into turbo
+- [X] T011 [P] Contract pipeline: zod-openapi emitter in `apps/api/src/openapi/`, `scripts/generate-dart-client.sh` (openapi-generator dart-dio → `apps/mobile/lib/src/api/`), and `pnpm contracts:check` drift gate wired into turbo
 - [X] T012 [P] Rate-limit middleware in `apps/api/src/common/rate-limit/` (per-user/IP defaults, complaint/presign/WS-reconnect limits from Clarifications CHK013)
 - [X] T013 [P] Seed script `apps/api/scripts/seed.ts` + fixtures (`fixtures/wards-sample.geojson`, `fixtures/trail-route1.geojson`): operator, ward, route, auto, pre-provisioned driver phone, households per quickstart.md §1
-- [ ] T014 [P] Flutter core in `apps/mobile/lib/src/core/`: session store (flutter_secure_storage), dio interceptors (auth/refresh), map abstraction widget over maplibre_gl with configurable tile URL (R10 — OpenFreeMap, no osm.org, neutral light style per DS-06), `ThemeData` built from spec Design System tokens (spec Design Tokens v1, DS-01..05), EN/KN ARB scaffolding
-- [ ] T015 [P] Portal auth in `apps/web/src/`: login page, session handling against `/v1/auth/login`, role-based layout shells for Super Admin and Ward Admin; Tailwind theme mirroring the spec Design System tokens (spec Design Tokens v1, DS-01..05); strip old public-map pages
+- [X] T014 [P] Flutter core in `apps/mobile/lib/src/core/`: session store (flutter_secure_storage), dio interceptors (auth/refresh), map abstraction widget over maplibre_gl with configurable tile URL (R10 — OpenFreeMap, no osm.org, neutral light style per DS-06), `ThemeData` built from spec Design System tokens (spec Design Tokens v1, DS-01..05), EN/KN ARB scaffolding
+- [X] T015 [P] Portal auth in `apps/web/src/`: login page, session handling against `/v1/auth/login`, role-based layout shells for Super Admin and Ward Admin; Tailwind theme mirroring the spec Design System tokens (spec Design Tokens v1, DS-01..05); strip old public-map pages
 - [X] T016 Unit tests for shared schemas and auth flows in `apps/api/test/` (OTP limits, refresh rotation/reuse, driver device rule) — Principle V
 
 **Checkpoint**: `docker compose up` + migrate + seed + all quality gates green.

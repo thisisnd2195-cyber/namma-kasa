@@ -7,7 +7,7 @@ analyzer:
     strict-raw-types: true
   exclude:
     - "**/*.g.dart"
-    - "lib/src/api/**" # generated Dart client — not ours to lint
+    - "packages/namma_kasa_api/**" # generated Dart client — not ours to lint
 
 linter:
   rules:

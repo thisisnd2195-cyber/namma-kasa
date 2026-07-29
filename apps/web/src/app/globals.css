@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Design tokens v1 from specs/001-waste-collection-tracking/spec.md.
+ * These mirror apps/mobile/lib/src/core/theme.dart — the two apps share no UI
+ * code (constitution Principle III), so tokens are the only thing keeping them
+ * consistent. Change one, change both (DS-05).
+ */
+@theme {
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8f9fa;
+  --color-outline: #dadce0;
+  --color-text-primary: #202124;
+  --color-text-secondary: #5f6368;
+  --color-text-disabled: #9aa0a6;
+
+  --color-primary: #1a73e8;
+  --color-primary-pressed: #185abc;
+  --color-primary-container: #e8f0fe;
+
+  --color-success: #188038;
+  --color-success-container: #e6f4ea;
+  --color-warning: #f9ab00;
+  --color-warning-container: #fef7e0;
+  --color-danger: #d93025;
+  --color-danger-container: #fce8e6;
+
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+
+  --text-display: 1.75rem;
+  --text-display--line-height: 2.25rem;
+  --text-headline: 1.375rem;
+  --text-headline--line-height: 1.75rem;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }

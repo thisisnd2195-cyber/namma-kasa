@@ -7,7 +7,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "contracts:generate": "bash scripts/generate-dart-client.sh",
+    "contracts:check": "bash scripts/check-contracts.sh"
   },
   "devDependencies": {
     "prettier": "^3.5.0",

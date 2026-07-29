@@ -25,6 +25,11 @@ dependencies:
   # EN + KN are both first-class (FR-RES-06)
   intl: any
 
+  # Generated from contracts/openapi.json — never hand-edited.
+  # Regenerate with: pnpm contracts:generate
+  namma_kasa_api:
+    path: packages/namma_kasa_api
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

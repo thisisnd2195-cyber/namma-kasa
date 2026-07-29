@@ -1,0 +1,623 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Namma Kasa API",
+    "version": "0.1.0",
+    "description": "Live tracking of door-to-door waste collection. Errors are RFC 9457 problem+json."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/v1",
+      "description": "Local"
+    }
+  ],
+  "paths": {
+    "/auth/otp/send": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Send a one-time code to a phone number",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpSendResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Cooldown or hourly cap hit",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/otp/verify": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange a one-time code for a verification token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phone verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpVerifyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect code",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Code expired or burned",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Create a resident or driver account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokens"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Driver number not pre-provisioned",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Account already exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign in with password or Google",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokens"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bad credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Driver new device: re-verify phone",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Rotate a refresh token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rotated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokens"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or reused token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ]
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresInSec": {
+            "type": "integer"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "resident",
+                  "driver",
+                  "ward_admin",
+                  "super_admin"
+                ]
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "kn"
+                ]
+              },
+              "authProvider": {
+                "type": "string",
+                "enum": [
+                  "password",
+                  "google"
+                ]
+              },
+              "wardId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "locale",
+              "authProvider",
+              "wardId"
+            ]
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresInSec",
+          "user"
+        ]
+      },
+      "OtpSendRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{7,14}$"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "OtpSendResponse": {
+        "type": "object",
+        "properties": {
+          "resendAfterSec": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resendAfterSec"
+        ]
+      },
+      "OtpVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{7,14}$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "OtpVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "verificationToken"
+        ]
+      },
+      "RegisterRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "const": "resident"
+              },
+              "verificationToken": {
+                "type": "string"
+              },
+              "credential": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "password": {
+                        "type": "string",
+                        "minLength": 8
+                      }
+                    },
+                    "required": [
+                      "password"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "googleIdToken": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "googleIdToken"
+                    ]
+                  }
+                ]
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "addressLine": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "landmark": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "pin": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": 12.7,
+                        "maximum": 13.25
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": 77.3,
+                        "maximum": 77.9
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lng"
+                    ]
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "kn"
+                    ],
+                    "default": "en"
+                  },
+                  "consent": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "fullName",
+                  "addressLine",
+                  "pin",
+                  "consent"
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "verificationToken",
+              "credential",
+              "profile"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "const": "driver"
+              },
+              "verificationToken": {
+                "type": "string"
+              },
+              "credential": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "password": {
+                        "type": "string",
+                        "minLength": 8
+                      }
+                    },
+                    "required": [
+                      "password"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "googleIdToken": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "googleIdToken"
+                    ]
+                  }
+                ]
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "kn"
+                    ],
+                    "default": "kn"
+                  },
+                  "consent": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "consent"
+                ]
+              },
+              "deviceId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "role",
+              "verificationToken",
+              "credential",
+              "profile",
+              "deviceId"
+            ]
+          }
+        ]
+      },
+      "LoginRequest": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string",
+                "pattern": "^[1-9]\\d{7,14}$"
+              },
+              "password": {
+                "type": "string",
+                "minLength": 1
+              },
+              "deviceId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone",
+              "password"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "googleIdToken": {
+                "type": "string",
+                "minLength": 1
+              },
+              "deviceId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "googleIdToken"
+            ]
+          }
+        ]
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      }
+    }
+  }
+}
