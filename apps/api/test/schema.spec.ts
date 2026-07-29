@@ -9,6 +9,15 @@ afterAll(async () => {
   await db.destroy();
 });
 
+/** Unique per call so fixtures never collide with seed data or each other. */
+function registrationNumber(): string {
+  const letters = Array.from({ length: 2 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+  ).join("");
+  const digits = String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
+  return `KA${Math.floor(Math.random() * 90 + 10)}${letters}${digits}`;
+}
+
 /** Axis-aligned box as a GeoJSON Polygon, for readable fixtures. */
 function box(minLng: number, minLat: number, maxLng: number, maxLat: number) {
   return {
@@ -126,7 +135,7 @@ describe("assignment history", () => {
         .executeTakeFirstOrThrow();
       const auto = await trx
         .insertInto("autos")
-        .values({ registration_number: "KA01AB1234", ward_id: wardId })
+        .values({ registration_number: registrationNumber(), ward_id: wardId })
         .returning("id")
         .executeTakeFirstOrThrow();
 
@@ -156,7 +165,7 @@ describe("assignment history", () => {
         .executeTakeFirstOrThrow();
       const auto = await trx
         .insertInto("autos")
-        .values({ registration_number: "KA05XY9876", ward_id: first.wardId })
+        .values({ registration_number: registrationNumber(), ward_id: first.wardId })
         .returning("id")
         .executeTakeFirstOrThrow();
 

@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "ward_code": "W110", "name": "Shanthala Nagar (sample)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.58, 12.955],
+            [77.62, 12.955],
+            [77.62, 12.985],
+            [77.58, 12.985],
+            [77.58, 12.955]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_code": "W154", "name": "Basavanagudi (sample)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.555, 12.92],
+            [77.578, 12.92],
+            [77.578, 12.95],
+            [77.555, 12.95],
+            [77.555, 12.92]
+          ]
+        ]
+      }
+    }
+  ]
+}

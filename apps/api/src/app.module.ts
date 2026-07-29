@@ -1,15 +1,18 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { validateEnv } from "./config/config.schema";
 import { DbModule } from "./db/db.module";
+import { RedisModule } from "./redis/redis.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { AuthGuard } from "./modules/auth/guards/auth.guard";
+import { RateLimitGuard } from "./common/rate-limit/rate-limit.guard";
+import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validate: validateEnv,
-    }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
@@ -21,6 +24,14 @@ import { DbModule } from "./db/db.module";
       },
     }),
     DbModule,
+    RedisModule,
+    AuthModule,
+  ],
+  providers: [
+    // Deny by default: every route needs a token unless marked @Public.
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule {}
