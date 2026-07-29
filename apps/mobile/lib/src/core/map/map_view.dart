@@ -5,6 +5,10 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../env.dart';
 
+// Re-exported so screens depend on this abstraction rather than on MapLibre
+// directly — the point of keeping the SDK swappable (D-2).
+export 'package:maplibre_gl/maplibre_gl.dart' show LatLng, LatLngBounds;
+
 /// Bengaluru city centre, used until a real position is known.
 const kBengaluruCentre = LatLng(12.9716, 77.5946);
 

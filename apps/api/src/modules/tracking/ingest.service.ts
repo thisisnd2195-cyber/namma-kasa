@@ -36,6 +36,15 @@ export interface IngestResult {
   rejected: number;
 }
 
+/**
+ * Called for each accepted position. Kept as a callback so ingest does not
+ * depend on the resident or notification modules, which both depend on it.
+ */
+export type PositionListener = (
+  context: TripContext,
+  position: { lat: number; lng: number; heading: number | null; at: Date },
+) => void | Promise<void>;
+
 /** Redis keys. Live state is deliberately not in Postgres — it expires. */
 export const liveKey = (autoId: string): string => `auto:pos:${autoId}`;
 export const wardGeoKey = (wardId: string): string => `ward:autos:${wardId}`;
@@ -46,10 +55,16 @@ export const seqKey = (tripId: string): string => `trip:seq:${tripId}`;
 export class IngestService {
   private readonly logger = new Logger(IngestService.name);
 
+  private readonly listeners: PositionListener[] = [];
+
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
+
+  onPosition(listener: PositionListener): void {
+    this.listeners.push(listener);
+  }
 
   async contextFor(tripId: string): Promise<TripContext | null> {
     const row = await this.db
@@ -149,6 +164,22 @@ export class IngestService {
       .set(lastPingKey(context.tripId), String(Date.now()))
       .set(seqKey(context.tripId), String(highestSeq), "EX", 86_400)
       .exec();
+
+    // Downstream work (collection events, geofencing, live fan-out) must never
+    // fail the ingest itself — a dropped notification is recoverable, a lost
+    // ping is not.
+    for (const listener of this.listeners) {
+      try {
+        await listener(context, {
+          lat: latest.lat,
+          lng: latest.lng,
+          heading: latest.heading ?? null,
+          at: latest.recordedAt,
+        });
+      } catch (error) {
+        this.logger.warn(`Position listener failed: ${String(error)}`);
+      }
+    }
 
     return { accepted: accepted.length, rejected };
   }

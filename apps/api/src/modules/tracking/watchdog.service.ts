@@ -115,7 +115,7 @@ export class WatchdogService implements OnModuleInit, OnModuleDestroy {
       .select([
         "t.id as tripId",
         "t.auto_id as autoId",
-        sql<number>`extract(epoch from t.started_at) * 1000`.as("startedMs"),
+        sql<number>`(extract(epoch from t.started_at) * 1000)::float8`.as("startedMs"),
         "a.registration_number as registrationNumber",
         "a.ward_id as wardId",
         "r.name as routeName",

@@ -26,7 +26,7 @@ export class HouseholdsService {
         "ward_id",
         // Epoch millis, so the aging comparison does not depend on how the
         // driver hands back timestamps.
-        sql<number>`extract(epoch from created_at) * 1000`.as("created_ms"),
+        sql<number>`(extract(epoch from created_at) * 1000)::float8`.as("created_ms"),
       ])
       .where("mapping_status", "=", "pending_review")
       .$if(Boolean(wardId), (qb) => qb.where("ward_id", "=", wardId))

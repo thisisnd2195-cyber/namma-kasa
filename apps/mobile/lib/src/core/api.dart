@@ -59,6 +59,40 @@ class Api {
     return _toSession(response.data!);
   }
 
+  Future<Map<String, dynamic>> residentHome() async {
+    final response = await _dio.get<Map<String, dynamic>>('/resident/home');
+    return response.data!;
+  }
+
+  Future<Session> registerResident({
+    required String verificationToken,
+    required String password,
+    required String fullName,
+    required String addressLine,
+    String? landmark,
+    required double lat,
+    required double lng,
+    required String locale,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/register',
+      data: {
+        'role': 'resident',
+        'verificationToken': verificationToken,
+        'credential': {'password': password},
+        'profile': {
+          'fullName': fullName,
+          'addressLine': addressLine,
+          'landmark': ?landmark,
+          'pin': {'lat': lat, 'lng': lng},
+          'locale': locale,
+          'consent': true,
+        },
+      },
+    );
+    return _toSession(response.data!);
+  }
+
   Future<Map<String, dynamic>> driverAssignment() async {
     final response = await _dio.get<Map<String, dynamic>>('/driver/assignment');
     return response.data!;

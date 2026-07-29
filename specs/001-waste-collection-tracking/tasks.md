@@ -115,14 +115,14 @@ equivalent in capability:
 **Goal**: Resident onboarding with pin-drop mapping → live home map via WS.
 **Independent test**: spec US3 acceptance 1–5 (quickstart §3–4).
 
-- [ ] T034 [P] [US3] Zod contracts for household/resident-home/review-queue in `packages/shared/src/contracts/`; regenerate Dart client
-- [ ] T035 [US3] Household mapping in `apps/api/src/modules/geo/households/`: point-in-polygon ward+route derivation, route-overlap-free guarantee (FR-ROUTE-05), pending_review path, pin-edit re-mapping with old-route alert cancellation (FR-RES-04, CHK040), review-queue endpoints with 48 h aging flag (CHK020)
-- [ ] T036 [US3] Resident home endpoint `GET /v1/resident/home` in `apps/api/src/modules/tracking/`: route/schedule/pass info, active trips, last-collected from `household_collections`; collection-event recorder (75 m proximity per Clarifications CHK002, unique per household+trip) in the geofence path
-- [ ] T037 [US3] WebSocket fan-out in `apps/api/src/modules/tracking/live/`: `/v1/live` upgrade with JWT route-scope check, ≤ 1 update/2 s throttle per auto, trip_status frames, 60-min reauth frame (contracts/realtime.md §2), ward-admin scope for dashboard reuse
-- [ ] T038 [P] [US3] Flutter resident onboarding in `apps/mobile/lib/src/resident/onboarding/`: OTP → credential (password or google_sign_in) → explicit phone/location consent screen (NFR-04) → house details with pin-drop-first map (FR-AUTH-07), pending-review state UI
-- [ ] T039 [US3] Flutter resident home in `apps/mobile/lib/src/resident/home/`: live map with all serving autos (registration labels only — FR-RES-07), marker interpolation, waste types/window/pass/last-collected, no-trip empty state with next window (CHK005), WS reconnect + reauth handling
-- [ ] T040 [P] [US3] Portal review-queue page in `apps/web/src/app/review-queue/`: pending households list with aging flags, manual route assignment (FR-AUTH-08)
-- [ ] T041 [US3] Integration tests in `apps/api/test/resident.spec.ts`: US3 acceptance 1–5 (OTP limits, auto-mapping, review queue, WS scoping + cadence, PII absence in all resident payloads)
+- [X] T034 [P] [US3] Zod contracts for household/resident-home/review-queue in `packages/shared/src/contracts/`; regenerate Dart client
+- [X] T035 [US3] Household mapping in `apps/api/src/modules/geo/households/`: point-in-polygon ward+route derivation, route-overlap-free guarantee (FR-ROUTE-05), pending_review path, pin-edit re-mapping with old-route alert cancellation (FR-RES-04, CHK040), review-queue endpoints with 48 h aging flag (CHK020)
+- [X] T036 [US3] Resident home endpoint `GET /v1/resident/home` in `apps/api/src/modules/tracking/`: route/schedule/pass info, active trips, last-collected from `household_collections`; collection-event recorder (75 m proximity per Clarifications CHK002, unique per household+trip) in the geofence path
+- [X] T037 [US3] WebSocket fan-out in `apps/api/src/modules/tracking/live/`: `/v1/live` upgrade with JWT route-scope check, ≤ 1 update/2 s throttle per auto, trip_status frames, 60-min reauth frame (contracts/realtime.md §2), ward-admin scope for dashboard reuse
+- [X] T038 [P] [US3] Flutter resident onboarding in `apps/mobile/lib/src/resident/onboarding/`: OTP → credential (password or google_sign_in) → explicit phone/location consent screen (NFR-04) → house details with pin-drop-first map (FR-AUTH-07), pending-review state UI
+- [X] T039 [US3] Flutter resident home in `apps/mobile/lib/src/resident/home/`: live map with all serving autos (registration labels only — FR-RES-07), marker interpolation, waste types/window/pass/last-collected, no-trip empty state with next window (CHK005), WS reconnect + reauth handling
+- [X] T040 [P] [US3] Portal review-queue page in `apps/web/src/app/review-queue/`: pending households list with aging flags, manual route assignment (FR-AUTH-08)
+- [X] T041 [US3] Integration tests in `apps/api/test/resident.spec.ts`: US3 acceptance 1–5 (OTP limits, auto-mapping, review queue, WS scoping + cadence, PII absence in all resident payloads)
 
 **Checkpoint**: full P1→P3 slice: admin sets up, simulator drives, resident watches live.
 
