@@ -75,8 +75,8 @@ equivalent in capability:
 - [X] T018 [US1] Geo module in `apps/api/src/modules/geo/`: operators CRUD (retirement blocked with active wards), wards CRUD with `ST_Overlaps` 409 + conflict GeoJSON (FR-WARD-05), GeoJSON/KML import with per-feature accept/reject report (FR-WARD-04, CHK018), ward-admin provisioning (FR-WARD-06), ward boundary edit impact-count + household re-flag (CHK017)
 - [X] T019 [US1] Fleet module in `apps/api/src/modules/fleet/`: autos CRUD (registration regex, status transitions per data-model.md), drivers CRUD (pre-provisioning), assignment endpoints closing previous open row (`effective_from/to`, same-ward checks, FR-FLEET-01..04, CHK022)
 - [X] T020 [US1] Routes in geo module: CRUD with `ST_Within` ward validation + intra-ward route-overlap rejection (FR-ROUTE-01/05), passes_per_day, waste-type schedule per weekday (FR-ROUTE-03)
-- [ ] T021 [P] [US1] Portal wards pages in `apps/web/src/app/wards/`: list/map, boundary drawing with mapbox-gl-draw, overlap-conflict visualization, GeoJSON/KML import UI with reject report
-- [ ] T022 [P] [US1] Portal routes/fleet pages in `apps/web/src/app/routes/` and `apps/web/src/app/fleet/`: route drawing + schedule editor, auto/driver onboarding forms, assignment screens listing only available same-ward autos, assignment history view
+- [X] T021 [P] [US1] Portal wards pages in `apps/web/src/app/wards/`: list/map, boundary drawing with mapbox-gl-draw, overlap-conflict visualization, GeoJSON/KML import UI with reject report
+- [X] T022 [P] [US1] Portal routes/fleet pages in `apps/web/src/app/routes/` and `apps/web/src/app/fleet/`: route drawing + schedule editor, auto/driver onboarding forms, assignment screens listing only available same-ward autos, assignment history view
 - [X] T023 [US1] Integration tests in `apps/api/test/geo-fleet.spec.ts`: US1 acceptance scenarios 1–5 (import, overlap reject, route outside ward, assignment history, ward-scope denial)
 
 **Checkpoint**: US1 demoable end-to-end via portal.
@@ -146,7 +146,7 @@ equivalent in capability:
 - [ ] T056 [P] Localization completion: full EN/KN ARB coverage for resident + driver surfaces (driver defaults KN per CHK045); fallback-EN lint check
 - [ ] T057 [P] Observability per NFR-09: OpenTelemetry traces + Prometheus metrics in `apps/api/`, tracking-health dashboard tiles (per-ward drops %, ping latency, alert queue age per CHK046)
 - [ ] T058 Degradation controls (CHK043): live-cadence stretch + WS pause switches in `apps/api/src/modules/tracking/live/`, banner support in resident app
-- [ ] T059 Rewrite `README.md` for the tracking platform (stack, quickstart pointer, Flutter + docker prerequisites) — closes the v3.0.0 sync-report flag
+- [X] T059 Rewrite `README.md` for the tracking platform (stack, quickstart pointer, Flutter + docker prerequisites) — closes the v3.0.0 sync-report flag
 - [ ] T060 Full quickstart execution (all §1–§5 gates green, contract drift check clean) and record results; initial git commit series on `main`
 - [ ] T061 [P] Load test in `apps/api/test/load/`: k6 scenarios for MQTT/HTTPS ingest at 1,000 msg/s and WS fan-out at pilot-representative concurrency; assert NFR-03 latency budgets (SC-006 pre-pilot verification)
 
