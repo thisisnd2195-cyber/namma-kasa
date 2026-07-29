@@ -246,6 +246,54 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Location is blocked. Enable it in Settings to start a trip.'**
   String get locationBlocked;
+
+  /// No description provided for @minutesAway.
+  ///
+  /// In en, this message translates to:
+  /// **'~{minutes} min away'**
+  String minutesAway(int minutes);
+
+  /// No description provided for @atYourStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'At your street'**
+  String get atYourStreet;
+
+  /// No description provided for @reportIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an issue'**
+  String get reportIssue;
+
+  /// No description provided for @issueBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto broke down'**
+  String get issueBreakdown;
+
+  /// No description provided for @issueRoadBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Road blocked'**
+  String get issueRoadBlocked;
+
+  /// No description provided for @issueOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get issueOther;
+
+  /// No description provided for @issueSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Ward Admin has been told.'**
+  String get issueSent;
+
+  /// No description provided for @rateThisCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'The auto has been past. How was it?'**
+  String get rateThisCollection;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

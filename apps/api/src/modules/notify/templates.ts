@@ -1,4 +1,4 @@
-import type { Locale, WasteType } from "@namma-kasa/shared";
+import type { DriverIssueKind, Locale, WasteType } from "@namma-kasa/shared";
 
 /**
  * Notification copy lives server-side so both apps say the same thing and a
@@ -83,4 +83,36 @@ export function scheduleChangeCopy(locale: Locale, note: string): NotificationCo
   return locale === "kn"
     ? { title: "ಸಂಗ್ರಹಣೆ ವೇಳಾಪಟ್ಟಿ ಬದಲಾವಣೆ", body: note }
     : { title: "Collection schedule update", body: note };
+}
+
+/**
+ * The Ward Admin's alert when a driver reports a problem (FR-DRV-07). Kept
+ * short and specific: the admin acts on the kind, and the note is context.
+ */
+export function driverIssueCopy(
+  locale: Locale,
+  kind: DriverIssueKind,
+  note?: string,
+): NotificationCopy {
+  const kinds: Record<Locale, Record<DriverIssueKind, string>> = {
+    en: {
+      breakdown: "Auto broke down",
+      road_blocked: "Road blocked",
+      other: "Driver reported a problem",
+    },
+    kn: {
+      breakdown: "ಆಟೋ ಕೆಟ್ಟುಹೋಗಿದೆ",
+      road_blocked: "ರಸ್ತೆ ಬಂದ್ ಆಗಿದೆ",
+      other: "ಚಾಲಕ ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿದ್ದಾರೆ",
+    },
+  };
+
+  return {
+    title: kinds[locale][kind],
+    body: note?.trim()
+      ? note
+      : locale === "kn"
+        ? "ವಿವರಗಳಿಗೆ ಪೋರ್ಟಲ್ ತೆರೆಯಿರಿ"
+        : "Open the portal for details",
+  };
 }

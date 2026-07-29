@@ -45,6 +45,7 @@ node -e '
   // admin-only ones have to go too.
   const adminOnly = new Set([
     "Ward", "Route", "Operator", "ImportReport", "ReviewQueueItem", "AdminComplaint",
+    "CityRollup", "MissedPickup",
   ]);
   doc.components.schemas = Object.fromEntries(
     Object.entries(doc.components.schemas ?? {}).filter(([name]) => !adminOnly.has(name)),

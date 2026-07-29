@@ -1,10 +1,14 @@
-import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { sql } from "kysely";
 import {
   COMPLAINT_DAILY_LIMIT,
+  complaintSlaHours,
+  operatorConfigSchema,
   type AccessClaims,
   type Complaint,
+  type ComplaintCategory,
   type ComplaintStatus,
+  type OperatorConfig,
 } from "@namma-kasa/shared";
 import type {
   createComplaintSchema,
@@ -14,6 +18,7 @@ import type {
 import type { z } from "zod";
 import { DB, type Db } from "../../db/db.module";
 import { NotifyService } from "../notify/notify.service";
+import { SAHAAYA_CLIENT, type SahaayaClient } from "./sahaaya";
 import { serviceDateIST } from "../tracking/trips.service";
 
 type CreateComplaint = z.infer<typeof createComplaintSchema>;
@@ -29,9 +34,12 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
 
 @Injectable()
 export class ComplaintsService {
+  private readonly logger = new Logger(ComplaintsService.name);
+
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly notify: NotifyService,
+    @Inject(SAHAAYA_CLIENT) private readonly sahaaya: SahaayaClient,
   ) {}
 
   private async householdFor(
@@ -78,11 +86,87 @@ export class ComplaintsService {
         category: input.category,
         description: input.description ?? null,
         media_urls: input.mediaUrls,
+        sla_due_at: await this.slaDueAt(household.ward_id, input.category),
       })
       .returning("id")
       .executeTakeFirstOrThrow();
 
+    await this.syncToSahaaya(row.id, household.ward_id, input);
+
     return this.get(row.id);
+  }
+
+  /**
+   * Mirror the complaint into Sahaaya 2.0 when the operator has turned it on
+   * and the ward is actually BBMP's (FR-CMP-04). A private contractor has no
+   * Sahaaya presence, so the flag alone is not enough.
+   *
+   * Failure here is logged and swallowed: the complaint is already recorded
+   * with us, and losing it because a third party is down would be worse.
+   */
+  private async syncToSahaaya(
+    complaintId: string,
+    wardId: string,
+    input: CreateComplaint,
+  ): Promise<void> {
+    const ward = await this.db
+      .selectFrom("wards as w")
+      .innerJoin("operators as o", "o.id", "w.operator_id")
+      .select(["w.ward_code as wardCode", "o.type as operatorType", "o.config"])
+      .where("w.id", "=", wardId)
+      .executeTakeFirst();
+    if (!ward || ward.operatorType !== "bbmp") return;
+
+    const config = operatorConfigSchema.safeParse(ward.config ?? {});
+    if (!config.success || !config.data.sahaayaSyncEnabled) return;
+
+    const household = await this.db
+      .selectFrom("complaints as c")
+      .innerJoin("households as h", "h.id", "c.household_id")
+      .select("h.address_line as addressLine")
+      .where("c.id", "=", complaintId)
+      .executeTakeFirst();
+
+    try {
+      await this.sahaaya.push({
+        complaintId,
+        category: input.category,
+        description: input.description ?? null,
+        wardCode: ward.wardCode,
+        addressLine: household?.addressLine ?? "",
+        raisedAt: new Date(),
+      });
+    } catch (error) {
+      this.logger.warn(`Sahaaya sync failed for complaint ${complaintId}: ${String(error)}`);
+    }
+  }
+
+  /**
+   * When this complaint is due, from the owning operator's configured SLA
+   * (FR-CMP-03). Stamped at creation rather than derived on read so that a
+   * later change to the operator's policy cannot silently re-date complaints
+   * that were already raised under the old one.
+   */
+  private async slaDueAt(wardId: string, category: ComplaintCategory): Promise<Date> {
+    const hours = complaintSlaHours(await this.configFor(wardId), category);
+    return new Date(Date.now() + hours * 60 * 60 * 1000);
+  }
+
+  /**
+   * The operator policy governing a ward. A malformed or absent config must
+   * never block a resident's complaint, so this falls back to the defaults the
+   * schema already declares rather than throwing.
+   */
+  private async configFor(wardId: string): Promise<OperatorConfig> {
+    const operator = await this.db
+      .selectFrom("wards")
+      .innerJoin("operators", "operators.id", "wards.operator_id")
+      .select("operators.config")
+      .where("wards.id", "=", wardId)
+      .executeTakeFirst();
+
+    const parsed = operatorConfigSchema.safeParse(operator?.config ?? {});
+    return parsed.success ? parsed.data : operatorConfigSchema.parse({});
   }
 
   async get(complaintId: string): Promise<Complaint> {
@@ -138,6 +222,8 @@ export class ComplaintsService {
    * than by argument.
    */
   async listForWard(wardId: string, status?: ComplaintStatus) {
+    const { escalateAfterHours } = await this.configFor(wardId);
+
     let query = this.db
       .selectFrom("complaints as c")
       .innerJoin("households as h", "h.id", "c.household_id")
@@ -164,6 +250,16 @@ export class ComplaintsService {
           SELECT (extract(epoch from max(hc.detected_at)) * 1000)::float8
           FROM household_collections hc WHERE hc.household_id = h.id
         )`.as("lastCollectedMs"),
+        // Only an open complaint can breach: once it is resolved or rejected
+        // the clock has stopped, whatever the due time says (FR-CMP-03).
+        sql<boolean>`c.sla_due_at IS NOT NULL
+          AND c.status IN ('open', 'in_review')
+          AND c.sla_due_at < now()`.as("slaBreached"),
+        sql<boolean>`c.sla_due_at IS NOT NULL
+          AND c.status IN ('open', 'in_review')
+          AND c.sla_due_at + make_interval(hours => ${sql.lit(escalateAfterHours)}) < now()`.as(
+          "slaEscalated",
+        ),
       ])
       .where("c.ward_id", "=", wardId)
       .orderBy("c.created_at", "desc")
@@ -181,6 +277,8 @@ export class ComplaintsService {
       routeId: row.route_id,
       wardId: row.ward_id,
       slaDueAt: row.sla_due_at,
+      slaBreached: row.slaBreached,
+      slaEscalated: row.slaEscalated,
       resolutionNote: row.resolution_note,
       createdAt: row.created_at,
       history: [],

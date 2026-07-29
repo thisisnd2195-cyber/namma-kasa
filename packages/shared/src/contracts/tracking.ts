@@ -115,7 +115,23 @@ export const confirmMediaSchema = z.object({
 export const driverIssueSchema = z.object({
   kind: driverIssueKindSchema,
   note: z.string().trim().max(500).optional(),
+  /** Where the auto was; a blocked road is a place, not just an event. */
+  geo: latLngSchema.optional(),
 });
+export type DriverIssue = z.infer<typeof driverIssueSchema>;
+
+/** A reported issue as the driver and the Ward Admin queue see it back. */
+export const driverIssueRecordSchema = z.object({
+  id: uuidSchema,
+  kind: driverIssueKindSchema,
+  note: z.string().nullable(),
+  routeId: uuidSchema.nullable(),
+  /** Present only in the admin queue; drivers already know who they are. */
+  driverName: z.string().optional(),
+  acknowledgedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+});
+export type DriverIssueRecord = z.infer<typeof driverIssueRecordSchema>;
 
 /** Live positions for the ward dashboard (FR-DASH-01). */
 export const livePositionSchema = z.object({

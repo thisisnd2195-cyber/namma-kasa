@@ -62,6 +62,12 @@ export const residentHomeSchema = z.object({
   lastCollectedAt: z.coerce.date().nullable(),
   /** Set once today's collection has happened, so the app can offer a rating. */
   canRateToday: z.boolean(),
+  /**
+   * The window closed today and no auto came within 75 m (FR-DASH-03). Drives
+   * the prefilled missed-pickup complaint, so the resident does not have to
+   * describe what the GPS record already shows.
+   */
+  missedToday: z.boolean(),
 });
 export type ResidentHome = z.infer<typeof residentHomeSchema>;
 

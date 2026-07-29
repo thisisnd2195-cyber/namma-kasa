@@ -3,6 +3,7 @@ import {
   assignHouseholdRouteSchema,
   createOperatorSchema,
   createRouteSchema,
+  recordRoutePathSchema,
   createWardAdminSchema,
   createWardSchema,
   geoJsonAreaSchema,
@@ -125,6 +126,16 @@ export class AdminGeoController {
   @Roles("super_admin", "ward_admin")
   updateRoute(@Param("id") id: string, @Body(new ZodValidationPipe(updateRouteSchema)) body: never) {
     return this.routes.update(id, body);
+  }
+
+  /** Adopt a driven trip's trail as this route's path (FR-ROUTE-04). */
+  @Post("routes/:id/recorded-path")
+  @Roles("super_admin", "ward_admin")
+  recordRoutePath(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(recordRoutePathSchema)) body: { tripId: string },
+  ) {
+    return this.routes.recordPathFromTrip(id, body.tripId);
   }
 
   // ------------------------------------------------------ household review queue

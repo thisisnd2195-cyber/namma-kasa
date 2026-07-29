@@ -1,7 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import Redis from "ioredis";
 import { createTestDb } from "./helpers/db";
-import { GeofenceService, proximityDedupKey } from "../src/modules/notify/geofence.service";
+import {
+  GeofenceService,
+  arrivalDedupKey,
+  proximityDedupKey,
+} from "../src/modules/notify/geofence.service";
 import { NotifyService } from "../src/modules/notify/notify.service";
 import { proximityCopy, roundDistance } from "../src/modules/notify/templates";
 import type { PushMessage, PushSender } from "../src/modules/notify/push-sender";
@@ -242,5 +246,79 @@ describe("notification outbox", () => {
     const elapsedMs = Date.now() - started;
 
     expect(elapsedMs).toBeLessThan(10_000);
+  });
+});
+
+describe("arrival alert (FR-NOTIF-03)", () => {
+  let household: Awaited<ReturnType<typeof seededHousehold>>;
+
+  beforeEach(async () => {
+    household = await seededHousehold();
+    const date = serviceDateIST();
+    await redis.del(proximityDedupKey(household.householdId, household.routeId!, date, 1));
+    await redis.del(arrivalDedupKey(household.householdId, household.routeId!, date, 1));
+  });
+
+  it("fires when the auto is at the house", async () => {
+    const arrivals = await geofence.arrivalsFor(household.routeId!, 1, {
+      lat: household.lat,
+      lng: household.lng,
+    });
+    expect(arrivals.map((a) => a.householdId)).toContain(household.householdId);
+  });
+
+  it("stays quiet outside 75 m, where the proximity alert still fires", async () => {
+    // ~200 m north: inside a default 300 m radius, outside the arrival ring.
+    const position = { lat: household.lat + 0.0018, lng: household.lng };
+
+    const arrivals = await geofence.arrivalsFor(household.routeId!, 1, position);
+    expect(arrivals.map((a) => a.householdId)).not.toContain(household.householdId);
+
+    const hits = await geofence.hitsFor(household.routeId!, 1, position);
+    expect(hits.map((h) => h.householdId)).toContain(household.householdId);
+  });
+
+  it("does not let the proximity alert suppress it", async () => {
+    const position = { lat: household.lat, lng: household.lng };
+
+    // The heads-up goes out first, claiming its own key…
+    const hits = await geofence.hitsFor(household.routeId!, 1, position);
+    expect(hits.map((h) => h.householdId)).toContain(household.householdId);
+
+    // …and the arrival must still fire on the same ping. Sharing one key here
+    // would silently drop whichever alert lost the race.
+    const arrivals = await geofence.arrivalsFor(household.routeId!, 1, position);
+    expect(arrivals.map((a) => a.householdId)).toContain(household.householdId);
+  });
+
+  it("alerts once per pass, not once per ping", async () => {
+    const position = { lat: household.lat, lng: household.lng };
+    const first = await geofence.arrivalsFor(household.routeId!, 1, position);
+    const second = await geofence.arrivalsFor(household.routeId!, 1, position);
+
+    expect(first.map((a) => a.householdId)).toContain(household.householdId);
+    expect(second.map((a) => a.householdId)).not.toContain(household.householdId);
+  });
+
+  it("queues arrival copy distinct from the proximity copy", async () => {
+    const queued = await notify.queueArrival({
+      userId: household.userId,
+      locale: household.locale,
+      routeId: household.routeId!,
+      tripId: (
+        await db.selectFrom("trips").select("id").executeTakeFirstOrThrow()
+      ).id,
+      dedupKey: `test-arrival-${Date.now()}`,
+    });
+    expect(queued).toBe(true);
+
+    const row = await db
+      .selectFrom("notifications")
+      .select(["kind", "payload"])
+      .where("user_id", "=", household.userId)
+      .where("kind", "=", "arrival")
+      .orderBy("created_at", "desc")
+      .executeTakeFirstOrThrow();
+    expect(row.kind).toBe("arrival");
   });
 });

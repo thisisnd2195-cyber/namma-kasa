@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { ZodOpenApiPathsObject } from "zod-openapi";
 import {
   adminComplaintSchema,
+  cityRollupSchema,
   assignAutoToDriverSchema,
   assignRouteToAutoSchema,
   autoRouteAssignmentSchema,
@@ -19,17 +20,21 @@ import {
   createWardAdminSchema,
   createWardSchema,
   driverAssignmentSchema,
+  driverIssueRecordSchema,
+  driverIssueSchema,
   driverSchema,
   endTripSchema,
   geoJsonAreaSchema,
   householdSchema,
   importReportSchema,
   importWardsSchema,
+  missedPickupSchema,
   operatorSchema,
   pingAcceptedSchema,
   pingBatchSchema,
   presignRequestSchema,
   presignResponseSchema,
+  recordRoutePathSchema,
   ratingSchema,
   residentHomeSchema,
   residentSettingsSchema,
@@ -217,6 +222,74 @@ export const apiPaths: ZodOpenApiPathsObject = {
       responses: { 200: ok("Updated", openApiRouteSchema), 409: problem, 422: problem },
     },
   },
+  "/admin/routes/{id}/recorded-path": {
+    post: {
+      tags: ["admin"],
+      security: secured,
+      summary: "Adopt a completed trip's trail as this route's path",
+      requestParams: { path: idParam },
+      requestBody: json(recordRoutePathSchema),
+      responses: {
+        200: ok("Recorded", openApiRouteSchema),
+        404: problem, // no such trip
+        409: problem, // wrong route, still active, or too few positions
+      },
+    },
+  },
+
+  // ------------------------------------------------------ admin: dashboards
+
+  "/admin/dashboard/city": {
+    get: {
+      tags: ["admin"],
+      security: secured,
+      summary: "City-wide rollups for the Super Admin",
+      responses: { 200: ok("Rollup", cityRollupSchema), 403: problem },
+    },
+  },
+  "/admin/dashboard/missed-pickups": {
+    get: {
+      tags: ["admin"],
+      security: secured,
+      summary: "Households whose window closed today with no auto within 75 m",
+      requestParams: { query: z.object({ wardId: z.string().uuid().optional() }) },
+      responses: { 200: ok("Missed", z.array(missedPickupSchema)) },
+    },
+  },
+
+  // --------------------------------------------------- admin: driver issues
+
+  "/admin/driver-issues/wards/{wardId}": {
+    get: {
+      tags: ["admin"],
+      security: secured,
+      summary: "Problems drivers have reported in this ward",
+      requestParams: { path: wardIdParam },
+      responses: { 200: ok("Issues", z.array(driverIssueRecordSchema)) },
+    },
+  },
+  "/admin/driver-issues/{id}/acknowledge": {
+    patch: {
+      tags: ["admin"],
+      security: secured,
+      summary: "Mark a reported issue as seen",
+      requestParams: { path: idParam },
+      responses: { 200: ok("Acknowledged", driverIssueRecordSchema), 404: problem },
+    },
+  },
+
+  // ------------------------------------------------------------------ driver
+
+  "/driver/issues": {
+    post: {
+      tags: ["driver"],
+      security: secured,
+      summary: "Report a breakdown or blocked road to the Ward Admin",
+      requestBody: json(driverIssueSchema),
+      responses: { 201: ok("Reported", driverIssueRecordSchema), 404: problem },
+    },
+  },
+
   "/admin/households/review-queue": {
     get: {
       tags: ["admin"],

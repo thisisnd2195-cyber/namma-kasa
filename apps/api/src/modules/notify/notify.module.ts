@@ -19,7 +19,7 @@ import { TrackingModule } from "../tracking/tracking.module";
 import { weekdayIST, serviceDateIST } from "../tracking/trips.service";
 import { DB, type Db } from "../../db/db.module";
 import { Inject } from "@nestjs/common";
-import { GeofenceService, proximityDedupKey } from "./geofence.service";
+import { GeofenceService, arrivalDedupKey, proximityDedupKey } from "./geofence.service";
 import { NotifyService } from "./notify.service";
 import { ConsolePushSender, FcmPushSender, PUSH_SENDER } from "./push-sender";
 
@@ -125,26 +125,44 @@ export class NotifyModule implements OnModuleInit {
    */
   onModuleInit(): void {
     this.ingest.onPosition(async (context, position) => {
-      const hits = await this.geofence.hitsFor(
-        context.routeId,
-        context.passNumber,
-        position,
-      );
-      if (hits.length === 0) return;
-
-      const wasteTypes = await this.todayWasteTypes(context.routeId);
       const serviceDate = serviceDateIST();
 
-      for (const hit of hits) {
-        await this.notify.queueProximity({
-          userId: hit.userId,
-          locale: hit.locale,
-          distanceM: hit.distanceM,
-          wasteTypes,
+      // Two independent rings, each with its own dedup key: the heads-up at the
+      // household's chosen radius, and the "it's here" at 75 m (FR-NOTIF-03).
+      const [hits, arrivals] = await Promise.all([
+        this.geofence.hitsFor(context.routeId, context.passNumber, position),
+        this.geofence.arrivalsFor(context.routeId, context.passNumber, position),
+      ]);
+      if (hits.length === 0 && arrivals.length === 0) return;
+
+      if (hits.length > 0) {
+        const wasteTypes = await this.todayWasteTypes(context.routeId);
+        for (const hit of hits) {
+          await this.notify.queueProximity({
+            userId: hit.userId,
+            locale: hit.locale,
+            distanceM: hit.distanceM,
+            wasteTypes,
+            routeId: context.routeId,
+            tripId: context.tripId,
+            dedupKey: proximityDedupKey(
+              hit.householdId,
+              context.routeId,
+              serviceDate,
+              context.passNumber,
+            ),
+          });
+        }
+      }
+
+      for (const arrival of arrivals) {
+        await this.notify.queueArrival({
+          userId: arrival.userId,
+          locale: arrival.locale,
           routeId: context.routeId,
           tripId: context.tripId,
-          dedupKey: proximityDedupKey(
-            hit.householdId,
+          dedupKey: arrivalDedupKey(
+            arrival.householdId,
             context.routeId,
             serviceDate,
             context.passNumber,

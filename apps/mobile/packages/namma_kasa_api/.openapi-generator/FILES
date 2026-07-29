@@ -28,10 +28,11 @@ lib/model/driver_assignment.dart
 lib/model/driver_assignment_auto.dart
 lib/model/driver_assignment_route.dart
 lib/model/driver_assignment_today.dart
+lib/model/driver_issue_record.dart
+lib/model/driver_issues_post_request.dart
 lib/model/driver_trips_id_end_patch_request.dart
 lib/model/driver_trips_id_media_confirm_post201_response.dart
 lib/model/driver_trips_id_media_confirm_post_request.dart
-lib/model/driver_trips_id_media_confirm_post_request_geo.dart
 lib/model/driver_trips_id_media_presign_post201_response.dart
 lib/model/driver_trips_id_media_presign_post_request.dart
 lib/model/driver_trips_id_mqtt_token_post201_response.dart
@@ -39,6 +40,7 @@ lib/model/driver_trips_id_pings_post202_response.dart
 lib/model/driver_trips_id_pings_post_request.dart
 lib/model/driver_trips_id_pings_post_request_pings_inner.dart
 lib/model/driver_trips_post_request.dart
+lib/model/geo_point.dart
 lib/model/household.dart
 lib/model/login_request.dart
 lib/model/login_request_any_of.dart

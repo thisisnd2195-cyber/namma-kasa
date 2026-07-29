@@ -92,4 +92,30 @@ class L10nKn extends L10n {
   @override
   String get locationBlocked =>
       'ಸ್ಥಳ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸಲು ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಸಕ್ರಿಯಗೊಳಿಸಿ.';
+
+  @override
+  String minutesAway(int minutes) {
+    return '~$minutes ನಿಮಿಷದಲ್ಲಿ';
+  }
+
+  @override
+  String get atYourStreet => 'ನಿಮ್ಮ ಬೀದಿಯಲ್ಲಿದೆ';
+
+  @override
+  String get reportIssue => 'ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ';
+
+  @override
+  String get issueBreakdown => 'ಆಟೋ ಕೆಟ್ಟುಹೋಗಿದೆ';
+
+  @override
+  String get issueRoadBlocked => 'ರಸ್ತೆ ಬಂದ್ ಆಗಿದೆ';
+
+  @override
+  String get issueOther => 'ಬೇರೆ ಏನೋ';
+
+  @override
+  String get issueSent => 'ನಿಮ್ಮ ವಾರ್ಡ್ ಆಡ್ಮಿನ್‌ಗೆ ತಿಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get rateThisCollection => 'ಆಟೋ ಬಂದು ಹೋಗಿದೆ. ಹೇಗಿತ್ತು?';
 }

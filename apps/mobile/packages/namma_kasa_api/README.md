@@ -72,6 +72,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**authRefreshPost**](doc//AuthApi.md#authrefreshpost) | **POST** /auth/refresh | Rotate a refresh token
 *AuthApi* | [**authRegisterPost**](doc//AuthApi.md#authregisterpost) | **POST** /auth/register | Create a resident or driver account
 *DriverApi* | [**driverAssignmentGet**](doc//DriverApi.md#driverassignmentget) | **GET** /driver/assignment | Today's auto, route, waste types and pass progress
+*DriverApi* | [**driverIssuesPost**](doc//DriverApi.md#driverissuespost) | **POST** /driver/issues | Report a breakdown or blocked road to the Ward Admin
 *DriverApi* | [**driverTripsIdEndPatch**](doc//DriverApi.md#drivertripsidendpatch) | **PATCH** /driver/trips/{id}/end | End a trip
 *DriverApi* | [**driverTripsIdMediaConfirmPost**](doc//DriverApi.md#drivertripsidmediaconfirmpost) | **POST** /driver/trips/{id}/media/confirm | Record a photo once its upload succeeded
 *DriverApi* | [**driverTripsIdMediaPresignPost**](doc//DriverApi.md#drivertripsidmediapresignpost) | **POST** /driver/trips/{id}/media/presign | Presigned URL for a collection-proof photo
@@ -99,10 +100,11 @@ Class | Method | HTTP request | Description
  - [DriverAssignmentAuto](doc//DriverAssignmentAuto.md)
  - [DriverAssignmentRoute](doc//DriverAssignmentRoute.md)
  - [DriverAssignmentToday](doc//DriverAssignmentToday.md)
+ - [DriverIssueRecord](doc//DriverIssueRecord.md)
+ - [DriverIssuesPostRequest](doc//DriverIssuesPostRequest.md)
  - [DriverTripsIdEndPatchRequest](doc//DriverTripsIdEndPatchRequest.md)
  - [DriverTripsIdMediaConfirmPost201Response](doc//DriverTripsIdMediaConfirmPost201Response.md)
  - [DriverTripsIdMediaConfirmPostRequest](doc//DriverTripsIdMediaConfirmPostRequest.md)
- - [DriverTripsIdMediaConfirmPostRequestGeo](doc//DriverTripsIdMediaConfirmPostRequestGeo.md)
  - [DriverTripsIdMediaPresignPost201Response](doc//DriverTripsIdMediaPresignPost201Response.md)
  - [DriverTripsIdMediaPresignPostRequest](doc//DriverTripsIdMediaPresignPostRequest.md)
  - [DriverTripsIdMqttTokenPost201Response](doc//DriverTripsIdMqttTokenPost201Response.md)
@@ -110,6 +112,7 @@ Class | Method | HTTP request | Description
  - [DriverTripsIdPingsPostRequest](doc//DriverTripsIdPingsPostRequest.md)
  - [DriverTripsIdPingsPostRequestPingsInner](doc//DriverTripsIdPingsPostRequestPingsInner.md)
  - [DriverTripsPostRequest](doc//DriverTripsPostRequest.md)
+ - [GeoPoint](doc//GeoPoint.md)
  - [Household](doc//Household.md)
  - [LoginRequest](doc//LoginRequest.md)
  - [LoginRequestAnyOf](doc//LoginRequestAnyOf.md)

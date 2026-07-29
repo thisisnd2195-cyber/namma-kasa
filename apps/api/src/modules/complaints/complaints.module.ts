@@ -12,6 +12,7 @@ import { Throttle } from "../../common/rate-limit/rate-limit.guard";
 import { CurrentUser, Roles } from "../auth/decorators";
 import { WardScopeGuard } from "../auth/guards/ward-scope.guard";
 import { NotifyModule } from "../notify/notify.module";
+import { LoggingSahaayaClient, SAHAAYA_CLIENT } from "./sahaaya";
 import { ComplaintsService } from "./complaints.service";
 
 @Controller("resident")
@@ -73,7 +74,7 @@ export class AdminComplaintsController {
 @Module({
   imports: [NotifyModule],
   controllers: [ResidentComplaintsController, AdminComplaintsController],
-  providers: [ComplaintsService],
+  providers: [{ provide: SAHAAYA_CLIENT, useClass: LoggingSahaayaClient }, ComplaintsService],
   exports: [ComplaintsService],
 })
 export class ComplaintsModule {}

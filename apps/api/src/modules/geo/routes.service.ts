@@ -126,6 +126,62 @@ export class RoutesService {
     return this.get(id);
   }
 
+  /**
+   * Adopt a completed trip's GPS trail as this route's path (FR-ROUTE-04).
+   *
+   * Drawing a path by hand in the portal is slow and approximate; the auto has
+   * already driven the real one. Only a completed trip counts — an active
+   * trip's trail is half a route, and adopting it would record a dead end.
+   */
+  async recordPathFromTrip(routeId: string, tripId: string): Promise<Route> {
+    const trip = await this.db
+      .selectFrom("trips")
+      .select(["id", "route_id", "status"])
+      .where("id", "=", tripId)
+      .executeTakeFirst();
+    if (!trip) throw new HttpException("Trip not found", HttpStatus.NOT_FOUND);
+    if (trip.route_id !== routeId) {
+      throw new HttpException("That trip did not run this route", HttpStatus.CONFLICT);
+    }
+    if (trip.status !== "completed") {
+      throw new HttpException(
+        "Only a completed trip has a full trail to record.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    // Two points is the minimum for a line; a trip that never moved has no
+    // path worth keeping, and ST_MakeLine would return null anyway.
+    const built = await sql<{ path: string | null }>`
+      SELECT ST_AsGeoJSON(
+        ST_MakeLine(p.geo::geometry ORDER BY p.recorded_at)
+      ) AS path
+      FROM location_pings p
+      WHERE p.trip_id = ${tripId}::uuid
+      HAVING count(*) >= 2
+    `.execute(this.db);
+
+    if (!built.rows[0]?.path) {
+      throw new HttpException(
+        "That trip has too few positions to build a path.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    await this.db
+      .updateTable("routes")
+      .set({
+        recorded_path: sql`ST_SetSRID(ST_GeomFromGeoJSON(${built.rows[0].path}), 4326)::geography`,
+        recorded_path_trip_id: tripId,
+        recorded_path_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where("id", "=", routeId)
+      .execute();
+
+    return this.get(routeId);
+  }
+
   private assertWindow(start: string, end: string): void {
     if (start >= end) {
       throw new HttpException(

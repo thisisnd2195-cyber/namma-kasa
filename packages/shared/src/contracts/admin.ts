@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   autoStatusSchema,
+  complaintCategorySchema,
   driverStatusSchema,
   lifecycleStatusSchema,
   operatorTypeSchema,
@@ -18,10 +19,47 @@ import {
 
 // ------------------------------------------------------------------ operators
 
+/**
+ * How long an operator has to resolve a complaint, in hours (FR-CMP-03).
+ *
+ * Kept as a plain number of hours rather than a calendar rule because BBMP and
+ * private contractors quote their commitments that way, and because a due
+ * timestamp is what the queue actually needs to sort and flag by. The real
+ * values are a per-operator policy decision the spec leaves open (§12), so the
+ * default below is a working figure, not a mandated one.
+ */
+export const DEFAULT_COMPLAINT_SLA_HOURS = 24;
+
+export const operatorConfigSchema = z.object({
+  /** Overrides by complaint category; anything absent uses the default. */
+  complaintSlaHours: z
+    .record(complaintCategorySchema, z.number().int().min(1).max(720))
+    .default({}),
+  defaultComplaintSlaHours: z
+    .number()
+    .int()
+    .min(1)
+    .max(720)
+    .default(DEFAULT_COMPLAINT_SLA_HOURS),
+  /** Escalate to the operator once a complaint is this far past due. */
+  escalateAfterHours: z.number().int().min(1).max(720).default(24),
+  /** FR-CMP-04: BBMP wards only, and off until an operator turns it on. */
+  sahaayaSyncEnabled: z.boolean().default(false),
+});
+export type OperatorConfig = z.infer<typeof operatorConfigSchema>;
+
+/** Hours allowed for this category, falling back to the operator default. */
+export function complaintSlaHours(
+  config: OperatorConfig,
+  category: z.infer<typeof complaintCategorySchema>,
+): number {
+  return config.complaintSlaHours[category] ?? config.defaultComplaintSlaHours;
+}
+
 export const createOperatorSchema = z.object({
   name: z.string().trim().min(1).max(200),
   type: operatorTypeSchema,
-  config: z.record(z.unknown()).default({}),
+  config: operatorConfigSchema.default({}),
 });
 
 export const updateOperatorSchema = createOperatorSchema
@@ -32,7 +70,7 @@ export const operatorSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   type: operatorTypeSchema,
-  config: z.record(z.unknown()),
+  config: operatorConfigSchema,
   status: lifecycleStatusSchema,
   wardCount: z.number().int().optional(),
 });
@@ -248,3 +286,43 @@ export type AutoRouteAssignment = z.infer<typeof autoRouteAssignmentSchema>;
 export type DriverAutoAssignment = z.infer<typeof driverAutoAssignmentSchema>;
 
 export const assignHouseholdRouteSchema = z.object({ routeId: uuidSchema });
+
+// --------------------------------------------------------------- dashboards
+
+/** Super Admin city rollup (FR-DASH-02). */
+export const cityRollupSchema = z.object({
+  serviceDate: z.string(),
+  trips: z.object({
+    total: z.number().int(),
+    active: z.number().int(),
+    completed: z.number().int(),
+  }),
+  routeCoverage: z.object({
+    scheduled: z.number().int(),
+    served: z.number().int(),
+    percent: z.number().int(),
+  }),
+  complaints: z.object({
+    last30Days: z.number().int(),
+    open: z.number().int(),
+    slaBreached: z.number().int(),
+  }),
+  openDriverIssues: z.number().int(),
+});
+export type CityRollup = z.infer<typeof cityRollupSchema>;
+
+/** A household whose window closed today with no auto within 75 m (FR-DASH-03). */
+export const missedPickupSchema = z.object({
+  householdId: uuidSchema,
+  fullName: z.string(),
+  addressLine: z.string(),
+  routeId: uuidSchema,
+  routeName: z.string(),
+  wardId: uuidSchema,
+  windowEnd: z.string(),
+  serviceDate: z.string(),
+});
+export type MissedPickup = z.infer<typeof missedPickupSchema>;
+
+/** Adopting a driven trip's trail as the route's path (FR-ROUTE-04). */
+export const recordRoutePathSchema = z.object({ tripId: uuidSchema });

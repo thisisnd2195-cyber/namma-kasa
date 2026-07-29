@@ -8,6 +8,7 @@ import {
 } from "@namma-kasa/shared";
 import type { updateHouseholdSchema, residentSettingsSchema } from "@namma-kasa/shared";
 import type { z } from "zod";
+import { RollupsService } from "../compliance/rollups.service";
 import { DB, type Db } from "../../db/db.module";
 import { HouseholdMappingService } from "../geo/household-mapping.service";
 import { IngestService, haversineMeters } from "../tracking/ingest.service";
@@ -22,6 +23,7 @@ export class ResidentService {
     @Inject(DB) private readonly db: Db,
     private readonly mapping: HouseholdMappingService,
     private readonly ingest: IngestService,
+    private readonly rollups: RollupsService,
   ) {}
 
   private householdQuery() {
@@ -74,6 +76,7 @@ export class ResidentService {
         currentPass: null,
         lastCollectedAt: null,
         canRateToday: false,
+        missedToday: false,
       };
     }
 
@@ -163,6 +166,7 @@ export class ResidentService {
       // Rating is offered only once the auto has actually been past today.
       canRateToday:
         !ratedToday && lastCollection?.collectionDate === today,
+      missedToday: await this.rollups.missedForHousehold(household.id),
     };
   }
 

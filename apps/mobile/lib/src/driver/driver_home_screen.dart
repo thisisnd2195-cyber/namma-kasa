@@ -8,8 +8,10 @@ import '../core/api.dart';
 import '../core/api_client.dart';
 import 'package:namma_kasa_api/api.dart' hide ApiException;
 
+import '../../l10n/app_localizations.dart';
 import '../core/theme.dart';
 import 'photo_capture.dart';
+import 'issue_sheet.dart';
 import 'trip_tracker.dart';
 
 /// The driver's whole day: what they are driving, where, and one big button.
@@ -165,7 +167,29 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Your route')),
+        appBar: AppBar(
+          title: const Text('Your route'),
+          actions: [
+            // Always reachable, trip or no trip: a breakdown does not wait for
+            // the driver to have started (FR-DRV-07).
+            IconButton(
+              tooltip: L10n.of(context).reportIssue,
+              icon: const Icon(Icons.report_problem_outlined),
+              onPressed: () async {
+                final sent = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const DriverIssueSheet(),
+                );
+                if (sent == true && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(L10n.of(context).issueSent)),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(

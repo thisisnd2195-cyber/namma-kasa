@@ -90,4 +90,30 @@ class L10nEn extends L10n {
   @override
   String get locationBlocked =>
       'Location is blocked. Enable it in Settings to start a trip.';
+
+  @override
+  String minutesAway(int minutes) {
+    return '~$minutes min away';
+  }
+
+  @override
+  String get atYourStreet => 'At your street';
+
+  @override
+  String get reportIssue => 'Report an issue';
+
+  @override
+  String get issueBreakdown => 'Auto broke down';
+
+  @override
+  String get issueRoadBlocked => 'Road blocked';
+
+  @override
+  String get issueOther => 'Something else';
+
+  @override
+  String get issueSent => 'Your Ward Admin has been told.';
+
+  @override
+  String get rateThisCollection => 'The auto has been past. How was it?';
 }

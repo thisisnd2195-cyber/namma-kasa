@@ -61,6 +61,59 @@ class DriverApi {
     return null;
   }
 
+  /// Report a breakdown or blocked road to the Ward Admin
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [DriverIssuesPostRequest] driverIssuesPostRequest:
+  Future<Response> driverIssuesPostWithHttpInfo({ DriverIssuesPostRequest? driverIssuesPostRequest, Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/driver/issues';
+
+    // ignore: prefer_final_locals
+    Object? postBody = driverIssuesPostRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Report a breakdown or blocked road to the Ward Admin
+  ///
+  /// Parameters:
+  ///
+  /// * [DriverIssuesPostRequest] driverIssuesPostRequest:
+  Future<DriverIssueRecord?> driverIssuesPost({ DriverIssuesPostRequest? driverIssuesPostRequest, Future<void>? abortTrigger, }) async {
+    final response = await driverIssuesPostWithHttpInfo(driverIssuesPostRequest: driverIssuesPostRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'DriverIssueRecord',) as DriverIssueRecord;
+    
+    }
+    return null;
+  }
+
   /// End a trip
   ///
   /// Note: This method returns the HTTP [Response].

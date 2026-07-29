@@ -302,3 +302,45 @@ now given proper schemas instead).
 `flutter analyze` excludes the generated package, so none of this surfaced until
 `flutter test` compiled it. Worth remembering: analyze passing says nothing about
 whether generated code builds.
+
+## Phase 12: Convergence
+
+- [X] T089 Fix `_distanceTo` in `apps/mobile/lib/src/resident/resident_home_screen.dart` to return the Euclidean distance instead of the sum of absolute lat/lng deltas, so the map chip agrees with the server's `ST_DWithin` radius per FR-RES-03 and FR-NOTIF-01 (contradicts) — a 300 m auto on a diagonal currently renders as "424 m away" while the push says "~300 m"
+- [X] T090 Compute `complaints.sla_due_at` on insert from the owning operator's configured SLA and surface breaches on the admin complaints view per FR-CMP-03 (partial) — the column is selected, typed, and rendered but never written, so every complaint reports a null SLA
+- [X] T091 Add the driver quick-report endpoint and screen wiring `driverIssueSchema` to a ward-admin notification per FR-DRV-07 (missing) — the contract and enum exist in `packages/shared` with no consumer
+- [X] T092 Emit the sub-75 m "arrived at your street" alert from `NotifyModule.onModuleInit` using the existing `arrivalCopy` template per FR-NOTIF-03 (missing) — the template and the `arrival` notification kind are currently unreachable
+- [X] T093 Build the Super Admin city rollup view (active trips, route coverage %, complaint volume and SLA state) in `apps/web/src/app` per FR-DASH-02 (missing)
+- [X] T094 Record a route's path geometry from a completed trip's trail, adding the column and the derivation, per FR-ROUTE-04 (missing)
+- [X] T095 Prompt for a rating when the serving auto exits the household's proximity zone or its trip completes per FR-CMP-06 (partial) — rating is currently reachable only if the resident opens the feedback screen
+- [X] T096 Add the coarse straight-line minutes estimate alongside the distance chip per FR-RES-03 (partial) — depends on T089
+- [X] T097 Detect missed pickups (no ping within 75 m of a household during its window) and offer a prefilled complaint per FR-DASH-03 (missing)
+- [X] T098 Add the flag-gated Sahaaya 2.0 complaint sync for BBMP wards per FR-CMP-04 (missing)
+
+### Phase 12 notes
+
+The distance bug (T089) was in shipped resident-facing code: `_distanceTo`
+computed `dLat² + dLng²` only to test for zero, then returned `|dLat| + |dLng|`.
+The square root was never taken, so the map reported Manhattan distance while
+the server decided the push with `ST_DWithin` on a geography. A 300 m auto on a
+diagonal showed as "424 m away" as the "~300 m" push arrived. The helpers moved
+to `lib/src/resident/proximity.dart` so they could be tested at all.
+
+The minutes estimate (T096) needed a pace constant the spec never states. It is
+derived rather than invented: FR-RES-05 puts the default alert radius at 300 m
+and FR-RES-03 illustrates the hint at that radius as "~6 min away", which fixes
+the pace at 300 m / 360 s. A test asserts the two stay consistent.
+
+`sla_due_at` (T090) had been selected, typed, and rendered since Phase 7 and
+never written — every complaint reported a null SLA while the portal advertised
+"Resident reports and SLAs". Operator `config` was `z.record(z.unknown())`, so
+there was nothing to read it from; it now has a shape.
+
+FR-CMP-04 (T098) is a seam, not an integration. BBMP has not published a
+Sahaaya 2.0 contract, so the gating, the BBMP-only eligibility rule and the call
+site are real and the transport logs. A live client is one `SahaayaClient`
+implementation away, with no caller changes.
+
+Adding `/driver/issues` renamed the generated Dart model for the shared
+`{lat, lng}` object, because the generator names inline schemas after whichever
+endpoint sorts first. It is now a named `GeoPoint` component, so the name no
+longer moves when a route is added.

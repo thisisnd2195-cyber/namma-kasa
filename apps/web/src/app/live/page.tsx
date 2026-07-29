@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PortalShell } from "@/components/PortalShell";
 import { Banner } from "@/app/wards/page";
+import type { DriverIssueRecord } from "@namma-kasa/shared";
 import { api, readSession } from "@/lib/session";
 
 interface Position {
@@ -28,9 +29,22 @@ interface Alert {
 
 const POLL_MS = 5_000;
 
+/** Dates cross the wire as ISO strings; Zod infers them as Date. */
+type WireIssue = Omit<DriverIssueRecord, "acknowledgedAt" | "createdAt"> & {
+  acknowledgedAt: string | null;
+  createdAt: string;
+};
+
+const ISSUE_LABEL: Record<DriverIssueRecord["kind"], string> = {
+  breakdown: "Auto broke down",
+  road_blocked: "Road blocked",
+  other: "Problem reported",
+};
+
 export default function LivePage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [issues, setIssues] = useState<WireIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,12 +68,29 @@ export default function LivePage() {
   const poll = useCallback(async () => {
     const wardId = readSession()?.wardId;
     if (!wardId) throw new Error("This view is scoped to a ward");
-    const data = await api<{ positions: Position[]; alerts: Alert[] }>(
-      `/admin/live/wards/${wardId}`,
-    );
+    const [data, reported] = await Promise.all([
+      api<{ positions: Position[]; alerts: Alert[] }>(`/admin/live/wards/${wardId}`),
+      api<WireIssue[]>(`/admin/driver-issues/wards/${wardId}`),
+    ]);
     setPositions(data.positions);
     setAlerts(data.alerts);
+    setIssues(reported.filter((issue) => !issue.acknowledgedAt));
   }, []);
+
+  const acknowledge = useCallback(
+    async (id: string) => {
+      // Optimistic: the row leaves the list immediately, and the next poll is
+      // the source of truth if the call failed.
+      setIssues((current) => current.filter((issue) => issue.id !== id));
+      try {
+        await api(`/admin/driver-issues/${id}/acknowledge`, { method: "PATCH" });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not acknowledge");
+        await poll();
+      }
+    },
+    [poll],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +172,34 @@ export default function LivePage() {
                   <li key={alert.tripId} className="text-[length:var(--text-label)] text-[var(--color-danger)]">
                     {alert.registrationNumber} on {alert.routeName} — silent for{" "}
                     {alert.silentForMin} min
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* A driver saying "I broke down" is more actionable than silence,
+              so it sits above the tracking-health list (FR-DRV-07). */}
+          {issues.length > 0 && (
+            <div className="rounded-[var(--radius-card)] bg-[var(--color-warning-container)] p-4">
+              <h2 className="text-[length:var(--text-body)] font-medium text-[#7a5300]">
+                Reported by drivers
+              </h2>
+              <ul className="mt-2 space-y-2">
+                {issues.map((issue) => (
+                  <li key={issue.id} className="flex flex-wrap items-center gap-2">
+                    <span className="text-[length:var(--text-label)] text-[#7a5300]">
+                      {ISSUE_LABEL[issue.kind]}
+                      {issue.driverName ? ` — ${issue.driverName}` : ""}
+                      {issue.note ? `: ${issue.note}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void acknowledge(issue.id)}
+                      className="ml-auto rounded-full border border-[#7a5300] px-3 py-1 text-[length:var(--text-label)] text-[#7a5300]"
+                    >
+                      Acknowledge
+                    </button>
                   </li>
                 ))}
               </ul>

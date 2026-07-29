@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { sql } from "kysely";
+import { sql, type RawBuilder } from "kysely";
 import type Redis from "ioredis";
 import { DB, type Db } from "../../db/db.module";
 import { REDIS } from "../../redis/redis.module";
-import { serviceDateIST } from "../tracking/trips.service";
+import { serviceDateIST as serviceDate } from "../tracking/trips.service";
 
 export interface ProximityHit {
   householdId: string;
@@ -25,6 +25,22 @@ export const proximityDedupKey = (
   passNumber: number,
 ): string => `prox:${householdId}:${routeId}:${serviceDate}:${passNumber}`;
 
+/**
+ * "Arrived at your street" is a second, closer alert (FR-NOTIF-03), so it needs
+ * its own dedup key. Sharing the proximity key would mean whichever fired first
+ * suppressed the other, and the resident would get one alert at an arbitrary
+ * distance instead of a heads-up followed by a now-or-never.
+ */
+export const arrivalDedupKey = (
+  householdId: string,
+  routeId: string,
+  serviceDate: string,
+  passNumber: number,
+): string => `arrive:${householdId}:${routeId}:${serviceDate}:${passNumber}`;
+
+/** FR-NOTIF-03: close enough that the resident should be walking out now. */
+export const ARRIVAL_RADIUS_M = 75;
+
 @Injectable()
 export class GeofenceService {
   constructor(
@@ -45,7 +61,36 @@ export class GeofenceService {
     position: { lat: number; lng: number },
     now = new Date(),
   ): Promise<ProximityHit[]> {
-    const serviceDate = serviceDateIST(now);
+    return this.claim(
+      // Each household chooses its own radius, so the ring is per row.
+      await this.within(routeId, position, sql`h.notification_radius_m`),
+      (householdId) => proximityDedupKey(householdId, routeId, serviceDate(now), passNumber),
+    );
+  }
+
+  /**
+   * Households the auto has just pulled up to (FR-NOTIF-03). A fixed ring, not
+   * the household's own radius: this alert means "it is here", which is the
+   * same distance for everybody.
+   */
+  async arrivalsFor(
+    routeId: string,
+    passNumber: number,
+    position: { lat: number; lng: number },
+    now = new Date(),
+  ): Promise<ProximityHit[]> {
+    return this.claim(
+      await this.within(routeId, position, sql.lit(ARRIVAL_RADIUS_M)),
+      (householdId) => arrivalDedupKey(householdId, routeId, serviceDate(now), passNumber),
+    );
+  }
+
+  /** Active households on the route inside `radius` metres of the auto. */
+  private async within(
+    routeId: string,
+    position: { lat: number; lng: number },
+    radius: RawBuilder<number>,
+  ) {
     const point = sql`ST_SetSRID(ST_MakePoint(${position.lng}, ${position.lat}), 4326)::geography`;
 
     const candidates = await sql<{
@@ -64,15 +109,28 @@ export class GeofenceService {
       JOIN users u ON u.id = h.user_id
       WHERE h.route_id = ${routeId}::uuid
         AND u.status = 'active'
-        AND ST_DWithin(h.house_geo::geography, ${point}, h.notification_radius_m)
+        AND ST_DWithin(h.house_geo::geography, ${point}, ${radius})
     `.execute(this.db);
 
+    return candidates.rows;
+  }
+
+  /** Keeps only the households not already told, under the given key. */
+  private async claim(
+    rows: {
+      household_id: string;
+      user_id: string;
+      locale: "en" | "kn";
+      distance_m: number;
+      radius_m: number;
+    }[],
+    keyFor: (householdId: string) => string,
+  ): Promise<ProximityHit[]> {
     const hits: ProximityHit[] = [];
-    for (const row of candidates.rows) {
-      const key = proximityDedupKey(row.household_id, routeId, serviceDate, passNumber);
+    for (const row of rows) {
       // SET NX is the whole dedup: first writer wins, and the key outlives the
       // collection day so a late second pass cannot re-alert for the first.
-      const claimed = await this.redis.set(key, "1", "EX", 36 * 3600, "NX");
+      const claimed = await this.redis.set(keyFor(row.household_id), "1", "EX", 36 * 3600, "NX");
       if (claimed !== "OK") continue;
 
       hits.push({

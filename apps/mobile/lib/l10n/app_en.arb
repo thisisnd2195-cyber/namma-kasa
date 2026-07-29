@@ -48,5 +48,20 @@
   "weakGps": "Weak GPS signal. Keep the phone where it can see the sky.",
   "noAssignment": "No assignment yet. Contact your Ward Admin.",
   "allPassesDone": "All passes for today are done.",
-  "locationBlocked": "Location is blocked. Enable it in Settings to start a trip."
+  "locationBlocked": "Location is blocked. Enable it in Settings to start a trip.",
+  "minutesAway": "~{minutes} min away",
+  "@minutesAway": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "atYourStreet": "At your street",
+  "reportIssue": "Report an issue",
+  "issueBreakdown": "Auto broke down",
+  "issueRoadBlocked": "Road blocked",
+  "issueOther": "Something else",
+  "issueSent": "Your Ward Admin has been told.",
+  "rateThisCollection": "The auto has been past. How was it?"
 }

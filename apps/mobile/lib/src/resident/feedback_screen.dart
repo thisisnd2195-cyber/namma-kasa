@@ -20,9 +20,18 @@ const _categories = <String, String>{
 /// Complaints and the day's rating. Both are deliberately short forms: a
 /// resident standing at their gate will not fill in a long one.
 class FeedbackScreen extends ConsumerStatefulWidget {
-  const FeedbackScreen({super.key, this.canRateToday = false});
+  const FeedbackScreen({
+    super.key,
+    this.canRateToday = false,
+    this.missedToday = false,
+  });
 
   final bool canRateToday;
+
+  /// The window closed with no auto (FR-DASH-03). Opens the form on the
+  /// missed-pickup category with the description already filled, because the
+  /// GPS record has established the fact the resident would be typing out.
+  final bool missedToday;
 
   @override
   ConsumerState<FeedbackScreen> createState() => _FeedbackScreenState();
@@ -40,6 +49,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.missedToday) {
+      _description.text =
+          'No auto reached my house before the collection window closed today.';
+    }
     unawaited(_load());
   }
 

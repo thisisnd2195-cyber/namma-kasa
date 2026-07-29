@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const SECTIONS = [
+  { href: "/dashboard", title: "Today", body: "Coverage, complaints, missed pickups" },
   { href: "/wards", title: "Wards", body: "Boundaries, import, ward admins" },
   { href: "/routes", title: "Routes", body: "Service areas, schedules, passes" },
   { href: "/fleet", title: "Fleet", body: "Autos, drivers, assignments" },

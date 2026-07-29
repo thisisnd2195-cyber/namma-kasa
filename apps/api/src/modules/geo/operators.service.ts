@@ -1,10 +1,21 @@
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { operatorConfigSchema } from "@namma-kasa/shared";
 import type { Operator, createOperatorSchema, updateOperatorSchema } from "@namma-kasa/shared";
 import type { z } from "zod";
 import { DB, type Db } from "../../db/db.module";
 
 type CreateOperator = z.infer<typeof createOperatorSchema>;
 type UpdateOperator = z.infer<typeof updateOperatorSchema>;
+
+/**
+ * The column is plain jsonb, so anything could be in a row written before the
+ * config gained a shape. Parsing on read fills in the defaults rather than
+ * handing a half-populated policy to the SLA calculation.
+ */
+const readConfig = (value: unknown) => {
+  const parsed = operatorConfigSchema.safeParse(value ?? {});
+  return parsed.success ? parsed.data : operatorConfigSchema.parse({});
+};
 
 @Injectable()
 export class OperatorsService {
@@ -30,7 +41,7 @@ export class OperatorsService {
       id: row.id,
       name: row.name,
       type: row.type,
-      config: row.config,
+      config: readConfig(row.config),
       status: row.status,
       wardCount: Number(row.ward_count),
     }));
@@ -42,7 +53,7 @@ export class OperatorsService {
       .values({ name: input.name, type: input.type, config: input.config })
       .returningAll()
       .executeTakeFirstOrThrow();
-    return { ...row, wardCount: 0 };
+    return { ...row, config: readConfig(row.config), wardCount: 0 };
   }
 
   async update(id: string, input: UpdateOperator): Promise<Operator> {
@@ -77,6 +88,6 @@ export class OperatorsService {
       .executeTakeFirst();
 
     if (!row) throw new HttpException("Operator not found", HttpStatus.NOT_FOUND);
-    return row;
+    return { ...row, config: readConfig(row.config) };
   }
 }

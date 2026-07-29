@@ -141,6 +141,20 @@ class Api {
     await _dio.post<void>('/resident/ratings', data: {'stars': stars, 'comment': ?comment});
   }
 
+  /// One tap from the driver's home screen (FR-DRV-07). No trip id: a
+  /// breakdown can happen before the first trip of the day has started.
+  Future<DriverIssueRecord> reportIssue(String kind, {String? note, double? lat, double? lng}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/driver/issues',
+      data: {
+        'kind': kind,
+        'note': ?note,
+        if (lat != null && lng != null) 'geo': {'lat': lat, 'lng': lng},
+      },
+    );
+    return _decode(response, DriverIssueRecord.fromJson);
+  }
+
   Future<Map<String, dynamic>> mqttToken(String tripId) async {
     final response =
         await _dio.post<Map<String, dynamic>>('/driver/trips/$tripId/mqtt-token');

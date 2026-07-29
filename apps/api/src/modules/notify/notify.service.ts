@@ -2,7 +2,12 @@ import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nest
 import type { Locale, NotificationKind, WasteType } from "@namma-kasa/shared";
 import { DB, type Db } from "../../db/db.module";
 import { PUSH_SENDER, type PushSender } from "./push-sender";
-import { complaintStatusCopy, proximityCopy, type NotificationCopy } from "./templates";
+import {
+  arrivalCopy,
+  complaintStatusCopy,
+  proximityCopy,
+  type NotificationCopy,
+} from "./templates";
 
 /** How often the outbox drains. The budget is 10 s p95 end to end (FR-NOTIF-05). */
 const DRAIN_INTERVAL_MS = 1_000;
@@ -80,6 +85,23 @@ export class NotifyService implements OnModuleInit, OnModuleDestroy {
       kind: "proximity",
       copy: proximityCopy(params.locale, params.distanceM, params.wasteTypes),
       data: { kind: "proximity", routeId: params.routeId, tripId: params.tripId },
+      dedupKey: params.dedupKey,
+    });
+  }
+
+  /** FR-NOTIF-03: the auto is at the street, so this one is time-critical. */
+  async queueArrival(params: {
+    userId: string;
+    locale: Locale;
+    routeId: string;
+    tripId: string;
+    dedupKey: string;
+  }): Promise<boolean> {
+    return this.queue({
+      userId: params.userId,
+      kind: "arrival",
+      copy: arrivalCopy(params.locale),
+      data: { kind: "arrival", routeId: params.routeId, tripId: params.tripId },
       dedupKey: params.dedupKey,
     });
   }

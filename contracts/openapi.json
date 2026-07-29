@@ -297,7 +297,56 @@
                   },
                   "config": {
                     "type": "object",
-                    "additionalProperties": {},
+                    "properties": {
+                      "complaintSlaHours": {
+                        "type": "object",
+                        "properties": {
+                          "missed_pickup": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "late": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "behavior": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "segregation": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "other": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          }
+                        },
+                        "additionalProperties": false,
+                        "default": {}
+                      },
+                      "defaultComplaintSlaHours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720,
+                        "default": 24
+                      },
+                      "escalateAfterHours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720,
+                        "default": 24
+                      },
+                      "sahaayaSyncEnabled": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
                     "default": {}
                   }
                 },
@@ -368,7 +417,56 @@
                   },
                   "config": {
                     "type": "object",
-                    "additionalProperties": {},
+                    "properties": {
+                      "complaintSlaHours": {
+                        "type": "object",
+                        "properties": {
+                          "missed_pickup": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "late": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "behavior": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "segregation": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "other": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          }
+                        },
+                        "additionalProperties": false,
+                        "default": {}
+                      },
+                      "defaultComplaintSlaHours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720,
+                        "default": 24
+                      },
+                      "escalateAfterHours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720,
+                        "default": 24
+                      },
+                      "sahaayaSyncEnabled": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
                     "default": {}
                   },
                   "status": {
@@ -1850,6 +1948,394 @@
         }
       }
     },
+    "/admin/routes/{id}/recorded-path": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adopt a completed trip's trail as this route's path",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tripId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "tripId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "wardId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "routeCode": {
+                      "type": "string"
+                    },
+                    "serviceableArea": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Polygon"
+                            },
+                            "coordinates": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "maxItems": 2,
+                                  "minItems": 2,
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ]
+                                }
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "coordinates"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "MultiPolygon"
+                            },
+                            "coordinates": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "maxItems": 2,
+                                    "minItems": 2,
+                                    "prefixItems": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "coordinates"
+                          ]
+                        }
+                      ]
+                    },
+                    "collectionDays": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7
+                      }
+                    },
+                    "windowStart": {
+                      "type": "string"
+                    },
+                    "windowEnd": {
+                      "type": "string"
+                    },
+                    "passesPerDay": {
+                      "type": "integer"
+                    },
+                    "wasteTypeSchedule": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "wardId",
+                    "name",
+                    "routeCode",
+                    "serviceableArea",
+                    "collectionDays",
+                    "windowStart",
+                    "windowEnd",
+                    "passesPerDay",
+                    "wasteTypeSchedule"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/admin/dashboard/city": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "City-wide rollups for the Super Admin",
+        "responses": {
+          "200": {
+            "description": "Rollup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityRollup"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/admin/dashboard/missed-pickups": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Households whose window closed today with no auto within 75 m",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "wardId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Missed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MissedPickup"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/driver-issues/wards/{wardId}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Problems drivers have reported in this ward",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wardId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DriverIssueRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/driver-issues/{id}/acknowledge": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a reported issue as seen",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverIssueRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/driver/issues": {
+      "post": {
+        "tags": [
+          "driver"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a breakdown or blocked road to the Ward Admin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "breakdown",
+                      "road_blocked",
+                      "other"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "geo": {
+                    "$ref": "#/components/schemas/GeoPoint"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverIssueRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
     "/admin/households/review-queue": {
       "get": {
         "tags": [
@@ -3287,23 +3773,7 @@
                     ]
                   },
                   "geo": {
-                    "type": "object",
-                    "properties": {
-                      "lat": {
-                        "type": "number",
-                        "minimum": -90,
-                        "maximum": 90
-                      },
-                      "lng": {
-                        "type": "number",
-                        "minimum": -180,
-                        "maximum": 180
-                      }
-                    },
-                    "required": [
-                      "lat",
-                      "lng"
-                    ]
+                    "$ref": "#/components/schemas/GeoPoint"
                   },
                   "capturedAt": {
                     "type": "string"
@@ -4331,7 +4801,62 @@
           },
           "config": {
             "type": "object",
-            "additionalProperties": {}
+            "properties": {
+              "complaintSlaHours": {
+                "type": "object",
+                "properties": {
+                  "missed_pickup": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  },
+                  "late": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  },
+                  "behavior": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  },
+                  "segregation": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  },
+                  "other": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  }
+                },
+                "additionalProperties": false,
+                "default": {}
+              },
+              "defaultComplaintSlaHours": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 720,
+                "default": 24
+              },
+              "escalateAfterHours": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 720,
+                "default": 24
+              },
+              "sahaayaSyncEnabled": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "complaintSlaHours",
+              "defaultComplaintSlaHours",
+              "escalateAfterHours",
+              "sahaayaSyncEnabled"
+            ]
           },
           "status": {
             "type": "string",
@@ -4518,23 +5043,7 @@
             ]
           },
           "pin": {
-            "type": "object",
-            "properties": {
-              "lat": {
-                "type": "number",
-                "minimum": -90,
-                "maximum": 90
-              },
-              "lng": {
-                "type": "number",
-                "minimum": -180,
-                "maximum": 180
-              }
-            },
-            "required": [
-              "lat",
-              "lng"
-            ]
+            "$ref": "#/components/schemas/GeoPoint"
           },
           "wardId": {
             "type": [
@@ -4870,6 +5379,9 @@
           },
           "canRateToday": {
             "type": "boolean"
+          },
+          "missedToday": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -4878,7 +5390,8 @@
           "servingAutos",
           "currentPass",
           "lastCollectedAt",
-          "canRateToday"
+          "canRateToday",
+          "missedToday"
         ]
       },
       "Household": {
@@ -4901,23 +5414,7 @@
             ]
           },
           "pin": {
-            "type": "object",
-            "properties": {
-              "lat": {
-                "type": "number",
-                "minimum": -90,
-                "maximum": 90
-              },
-              "lng": {
-                "type": "number",
-                "minimum": -180,
-                "maximum": 180
-              }
-            },
-            "required": [
-              "lat",
-              "lng"
-            ]
+            "$ref": "#/components/schemas/GeoPoint"
           },
           "wardId": {
             "type": [
@@ -5227,6 +5724,12 @@
               "servedOnComplaintDay",
               "lastCollectedAt"
             ]
+          },
+          "slaBreached": {
+            "type": "boolean"
+          },
+          "slaEscalated": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -5242,7 +5745,9 @@
           "createdAt",
           "history",
           "household",
-          "evidence"
+          "evidence",
+          "slaBreached",
+          "slaEscalated"
         ]
       },
       "Rating": {
@@ -5273,6 +5778,192 @@
           "stars",
           "comment",
           "collectionDate",
+          "createdAt"
+        ]
+      },
+      "GeoPoint": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "CityRollup": {
+        "type": "object",
+        "properties": {
+          "serviceDate": {
+            "type": "string"
+          },
+          "trips": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "active": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "active",
+              "completed"
+            ]
+          },
+          "routeCoverage": {
+            "type": "object",
+            "properties": {
+              "scheduled": {
+                "type": "integer"
+              },
+              "served": {
+                "type": "integer"
+              },
+              "percent": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "scheduled",
+              "served",
+              "percent"
+            ]
+          },
+          "complaints": {
+            "type": "object",
+            "properties": {
+              "last30Days": {
+                "type": "integer"
+              },
+              "open": {
+                "type": "integer"
+              },
+              "slaBreached": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "last30Days",
+              "open",
+              "slaBreached"
+            ]
+          },
+          "openDriverIssues": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "serviceDate",
+          "trips",
+          "routeCoverage",
+          "complaints",
+          "openDriverIssues"
+        ]
+      },
+      "MissedPickup": {
+        "type": "object",
+        "properties": {
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": "string"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeName": {
+            "type": "string"
+          },
+          "wardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "windowEnd": {
+            "type": "string"
+          },
+          "serviceDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "householdId",
+          "fullName",
+          "addressLine",
+          "routeId",
+          "routeName",
+          "wardId",
+          "windowEnd",
+          "serviceDate"
+        ]
+      },
+      "DriverIssueRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "breakdown",
+              "road_blocked",
+              "other"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "routeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "acknowledgedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "note",
+          "routeId",
+          "acknowledgedAt",
           "createdAt"
         ]
       }

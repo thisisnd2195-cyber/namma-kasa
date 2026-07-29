@@ -32,7 +32,7 @@ class Household {
 
   String? landmark;
 
-  DriverTripsIdMediaConfirmPostRequestGeo pin;
+  GeoPoint pin;
 
   String? wardId;
 
@@ -130,7 +130,7 @@ class Household {
         fullName: mapValueOfType<String>(json, r'fullName')!,
         addressLine: mapValueOfType<String>(json, r'addressLine')!,
         landmark: mapValueOfType<String>(json, r'landmark'),
-        pin: DriverTripsIdMediaConfirmPostRequestGeo.fromJson(json[r'pin'])!,
+        pin: GeoPoint.fromJson(json[r'pin'])!,
         wardId: mapValueOfType<String>(json, r'wardId'),
         routeId: mapValueOfType<String>(json, r'routeId'),
         mappingStatus: HouseholdMappingStatusEnum.fromJson(json[r'mappingStatus'])!,

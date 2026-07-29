@@ -1,3 +1,4 @@
+import { operatorConfigSchema } from "@namma-kasa/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   box,
@@ -40,7 +41,7 @@ beforeAll(async () => {
   const operator = await stack.operators.create({
     name: `Test Operator ${TEST_CITY}`,
     type: "private",
-    config: {},
+    config: operatorConfigSchema.parse({}),
   });
   operatorId = operator.id;
 });
@@ -336,7 +337,7 @@ describe("operator lifecycle (FR-WARD-01)", () => {
     const operator = await stack.operators.create({
       name: `Retiring ${TEST_CITY}`,
       type: "private",
-      config: {},
+      config: operatorConfigSchema.parse({}),
     });
     await stack.wards.create({
       operatorId: operator.id,

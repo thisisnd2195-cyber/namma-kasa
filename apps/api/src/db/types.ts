@@ -4,6 +4,7 @@ import type {
   AutoStatus,
   ComplaintCategory,
   ComplaintStatus,
+  DriverIssueKind,
   DriverStatus,
   LifecycleStatus,
   Locale,
@@ -87,6 +88,10 @@ export interface RoutesTable {
   route_code: string;
   serviceable_area: Geometry;
   path: Geometry | null;
+  /** Learned from a completed trip's trail rather than drawn (FR-ROUTE-04). */
+  recorded_path: Geometry | null;
+  recorded_path_trip_id: string | null;
+  recorded_path_at: Timestamp | null;
   collection_days: number[];
   window_start: string;
   window_end: string;
@@ -269,6 +274,19 @@ export interface AuditLogTable {
   at: Timestamp;
 }
 
+export interface DriverIssuesTable {
+  id: Generated<string>;
+  trip_id: string | null;
+  driver_id: string;
+  route_id: string | null;
+  ward_id: string;
+  kind: DriverIssueKind;
+  note: string | null;
+  geo: Geometry | null;
+  acknowledged_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
 export interface Database {
   operators: OperatorsTable;
   users: UsersTable;
@@ -289,6 +307,7 @@ export interface Database {
   complaints: ComplaintsTable;
   complaint_events: ComplaintEventsTable;
   ratings: RatingsTable;
+  driver_issues: DriverIssuesTable;
   notifications: NotificationsTable;
   audit_log: AuditLogTable;
 }

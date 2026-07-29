@@ -10,9 +10,9 @@
 
 part of openapi.api;
 
-class DriverTripsIdMediaConfirmPostRequestGeo {
-  /// Returns a new [DriverTripsIdMediaConfirmPostRequestGeo] instance.
-  DriverTripsIdMediaConfirmPostRequestGeo({
+class GeoPoint {
+  /// Returns a new [GeoPoint] instance.
+  GeoPoint({
     required this.lat,
     required this.lng,
   });
@@ -26,7 +26,7 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
   num lng;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is DriverTripsIdMediaConfirmPostRequestGeo &&
+  bool operator ==(Object other) => identical(this, other) || other is GeoPoint &&
     other.lat == lat &&
     other.lng == lng;
 
@@ -37,7 +37,7 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
     (lng.hashCode);
 
   @override
-  String toString() => 'DriverTripsIdMediaConfirmPostRequestGeo[lat=$lat, lng=$lng]';
+  String toString() => 'GeoPoint[lat=$lat, lng=$lng]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -46,10 +46,10 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
     return json;
   }
 
-  /// Returns a new [DriverTripsIdMediaConfirmPostRequestGeo] instance and imports its values from
+  /// Returns a new [GeoPoint] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
-  static DriverTripsIdMediaConfirmPostRequestGeo? fromJson(dynamic value) {
+  static GeoPoint? fromJson(dynamic value) {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
@@ -57,14 +57,14 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'lat'), 'Required key "DriverTripsIdMediaConfirmPostRequestGeo[lat]" is missing from JSON.');
-        assert(json[r'lat'] != null, 'Required key "DriverTripsIdMediaConfirmPostRequestGeo[lat]" has a null value in JSON.');
-        assert(json.containsKey(r'lng'), 'Required key "DriverTripsIdMediaConfirmPostRequestGeo[lng]" is missing from JSON.');
-        assert(json[r'lng'] != null, 'Required key "DriverTripsIdMediaConfirmPostRequestGeo[lng]" has a null value in JSON.');
+        assert(json.containsKey(r'lat'), 'Required key "GeoPoint[lat]" is missing from JSON.');
+        assert(json[r'lat'] != null, 'Required key "GeoPoint[lat]" has a null value in JSON.');
+        assert(json.containsKey(r'lng'), 'Required key "GeoPoint[lng]" is missing from JSON.');
+        assert(json[r'lng'] != null, 'Required key "GeoPoint[lng]" has a null value in JSON.');
         return true;
       }());
 
-      return DriverTripsIdMediaConfirmPostRequestGeo(
+      return GeoPoint(
         lat: num.parse('${json[r'lat']}'),
         lng: num.parse('${json[r'lng']}'),
       );
@@ -72,11 +72,11 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
     return null;
   }
 
-  static List<DriverTripsIdMediaConfirmPostRequestGeo> listFromJson(dynamic json, {bool growable = false,}) {
-    final result = <DriverTripsIdMediaConfirmPostRequestGeo>[];
+  static List<GeoPoint> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <GeoPoint>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
-        final value = DriverTripsIdMediaConfirmPostRequestGeo.fromJson(row);
+        final value = GeoPoint.fromJson(row);
         if (value != null) {
           result.add(value);
         }
@@ -85,12 +85,12 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
     return result.toList(growable: growable);
   }
 
-  static Map<String, DriverTripsIdMediaConfirmPostRequestGeo> mapFromJson(dynamic json) {
-    final map = <String, DriverTripsIdMediaConfirmPostRequestGeo>{};
+  static Map<String, GeoPoint> mapFromJson(dynamic json) {
+    final map = <String, GeoPoint>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>(); // ignore: parameter_assignments
       for (final entry in json.entries) {
-        final value = DriverTripsIdMediaConfirmPostRequestGeo.fromJson(entry.value);
+        final value = GeoPoint.fromJson(entry.value);
         if (value != null) {
           map[entry.key] = value;
         }
@@ -99,14 +99,14 @@ class DriverTripsIdMediaConfirmPostRequestGeo {
     return map;
   }
 
-  // maps a json object with a list of DriverTripsIdMediaConfirmPostRequestGeo-objects as value to a dart map
-  static Map<String, List<DriverTripsIdMediaConfirmPostRequestGeo>> mapListFromJson(dynamic json, {bool growable = false,}) {
-    final map = <String, List<DriverTripsIdMediaConfirmPostRequestGeo>>{};
+  // maps a json object with a list of GeoPoint-objects as value to a dart map
+  static Map<String, List<GeoPoint>> mapListFromJson(dynamic json, {bool growable = false,}) {
+    final map = <String, List<GeoPoint>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = DriverTripsIdMediaConfirmPostRequestGeo.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = GeoPoint.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;

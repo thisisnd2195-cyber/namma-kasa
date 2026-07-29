@@ -9,6 +9,7 @@ import { clearSession, readSession } from "@/lib/session";
 const subscribeToNothing = () => () => {};
 
 const NAV = [
+  { href: "/dashboard", label: "Today", superOnly: false },
   { href: "/wards", label: "Wards", superOnly: true },
   { href: "/routes", label: "Routes", superOnly: false },
   { href: "/fleet", label: "Fleet", superOnly: false },

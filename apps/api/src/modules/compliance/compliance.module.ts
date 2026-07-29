@@ -2,6 +2,8 @@ import { Controller, Delete, Get, HttpCode, HttpStatus, Module } from "@nestjs/c
 import type { AccessClaims } from "@namma-kasa/shared";
 import { CurrentUser, Public } from "../auth/decorators";
 import { ComplianceService } from "./compliance.service";
+import { DashboardsController } from "./dashboards.controller";
+import { RollupsService } from "./rollups.service";
 import { MetricsService } from "./metrics.service";
 
 @Controller()
@@ -39,8 +41,8 @@ export class ComplianceController {
 }
 
 @Module({
-  controllers: [ComplianceController],
-  providers: [ComplianceService, MetricsService],
+  controllers: [DashboardsController, ComplianceController],
+  providers: [RollupsService, ComplianceService, MetricsService],
   exports: [ComplianceService, MetricsService],
 })
 export class ComplianceModule {}

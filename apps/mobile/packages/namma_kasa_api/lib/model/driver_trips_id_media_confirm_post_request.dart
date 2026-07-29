@@ -32,7 +32,7 @@ class DriverTripsIdMediaConfirmPostRequest {
   /// source code must fall back to having a nullable type.
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
-  DriverTripsIdMediaConfirmPostRequestGeo? geo;
+  GeoPoint? geo;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -106,7 +106,7 @@ class DriverTripsIdMediaConfirmPostRequest {
         uploadId: mapValueOfType<String>(json, r'uploadId')!,
         objectUrl: mapValueOfType<String>(json, r'objectUrl')!,
         type: DriverTripsIdMediaConfirmPostRequestTypeEnum.fromJson(json[r'type']),
-        geo: DriverTripsIdMediaConfirmPostRequestGeo.fromJson(json[r'geo']),
+        geo: GeoPoint.fromJson(json[r'geo']),
         capturedAt: mapValueOfType<String>(json, r'capturedAt'),
       );
     }

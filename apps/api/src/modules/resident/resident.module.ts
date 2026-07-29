@@ -4,10 +4,11 @@ import { TrackingModule } from "../tracking/tracking.module";
 import { IngestService } from "../tracking/ingest.service";
 import { LiveGateway } from "../tracking/live.gateway";
 import { ResidentController } from "./resident.controller";
+import { ComplianceModule } from "../compliance/compliance.module";
 import { ResidentService } from "./resident.service";
 
 @Module({
-  imports: [GeoModule, TrackingModule],
+  imports: [ComplianceModule, GeoModule, TrackingModule],
   controllers: [ResidentController],
   providers: [ResidentService],
   exports: [ResidentService],

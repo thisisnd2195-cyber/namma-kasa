@@ -80,6 +80,7 @@ export const NOTIFICATION_KINDS = [
   "arrival",
   "schedule_change",
   "complaint_status",
+  "driver_issue",
 ] as const;
 export const notificationKindSchema = z.enum(NOTIFICATION_KINDS);
 export type NotificationKind = z.infer<typeof notificationKindSchema>;

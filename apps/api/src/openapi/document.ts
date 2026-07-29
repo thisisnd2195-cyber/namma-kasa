@@ -13,6 +13,10 @@ import {
   // Named so the generated client gets DriverAssignment rather than
   // DriverAssignmentGet200Response.
   adminComplaintSchema,
+  cityRollupSchema,
+  latLngSchema,
+  driverIssueRecordSchema,
+  missedPickupSchema,
   autoSchema,
   complaintSchema,
   driverAssignmentSchema,
@@ -166,6 +170,12 @@ export function buildOpenApiDocument(): ReturnType<typeof createDocument> {
         Complaint: complaintSchema,
         AdminComplaint: adminComplaintSchema,
         Rating: ratingSchema,
+        // Named so the Dart generator stops inventing a name from whichever
+        // endpoint happens to sort first — adding a route renamed it once.
+        GeoPoint: latLngSchema,
+        CityRollup: cityRollupSchema,
+        MissedPickup: missedPickupSchema,
+        DriverIssueRecord: driverIssueRecordSchema,
       },
       securitySchemes: {
         bearer: { type: "http", scheme: "bearer", bearerFormat: "JWT" },

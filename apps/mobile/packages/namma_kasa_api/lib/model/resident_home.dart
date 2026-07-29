@@ -19,6 +19,7 @@ class ResidentHome {
     required this.currentPass,
     required this.lastCollectedAt,
     required this.canRateToday,
+    required this.missedToday,
   });
 
   Household household;
@@ -33,6 +34,8 @@ class ResidentHome {
 
   bool canRateToday;
 
+  bool missedToday;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is ResidentHome &&
     other.household == household &&
@@ -40,7 +43,8 @@ class ResidentHome {
     _deepEquality.equals(other.servingAutos, servingAutos) &&
     other.currentPass == currentPass &&
     other.lastCollectedAt == lastCollectedAt &&
-    other.canRateToday == canRateToday;
+    other.canRateToday == canRateToday &&
+    other.missedToday == missedToday;
 
   @override
   int get hashCode =>
@@ -50,10 +54,11 @@ class ResidentHome {
     (servingAutos.hashCode) +
     (currentPass == null ? 0 : currentPass!.hashCode) +
     (lastCollectedAt == null ? 0 : lastCollectedAt!.hashCode) +
-    (canRateToday.hashCode);
+    (canRateToday.hashCode) +
+    (missedToday.hashCode);
 
   @override
-  String toString() => 'ResidentHome[household=$household, route=$route, servingAutos=$servingAutos, currentPass=$currentPass, lastCollectedAt=$lastCollectedAt, canRateToday=$canRateToday]';
+  String toString() => 'ResidentHome[household=$household, route=$route, servingAutos=$servingAutos, currentPass=$currentPass, lastCollectedAt=$lastCollectedAt, canRateToday=$canRateToday, missedToday=$missedToday]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -75,6 +80,7 @@ class ResidentHome {
       json[r'lastCollectedAt'] = null;
     }
       json[r'canRateToday'] = this.canRateToday;
+      json[r'missedToday'] = this.missedToday;
     return json;
   }
 
@@ -98,6 +104,8 @@ class ResidentHome {
         assert(json.containsKey(r'lastCollectedAt'), 'Required key "ResidentHome[lastCollectedAt]" is missing from JSON.');
         assert(json.containsKey(r'canRateToday'), 'Required key "ResidentHome[canRateToday]" is missing from JSON.');
         assert(json[r'canRateToday'] != null, 'Required key "ResidentHome[canRateToday]" has a null value in JSON.');
+        assert(json.containsKey(r'missedToday'), 'Required key "ResidentHome[missedToday]" is missing from JSON.');
+        assert(json[r'missedToday'] != null, 'Required key "ResidentHome[missedToday]" has a null value in JSON.');
         return true;
       }());
 
@@ -108,6 +116,7 @@ class ResidentHome {
         currentPass: mapValueOfType<int>(json, r'currentPass'),
         lastCollectedAt: mapValueOfType<String>(json, r'lastCollectedAt'),
         canRateToday: mapValueOfType<bool>(json, r'canRateToday')!,
+        missedToday: mapValueOfType<bool>(json, r'missedToday')!,
       );
     }
     return null;
@@ -161,6 +170,7 @@ class ResidentHome {
     'currentPass',
     'lastCollectedAt',
     'canRateToday',
+    'missedToday',
   };
 }
 

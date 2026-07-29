@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import Redis from "ioredis";
 import { COLLECTION_PROXIMITY_M } from "@namma-kasa/shared";
 import { createTestDb } from "./helpers/db";
+import { RollupsService } from "../src/modules/compliance/rollups.service";
 import { ResidentService } from "../src/modules/resident/resident.service";
 import { HouseholdMappingService } from "../src/modules/geo/household-mapping.service";
 import { IngestService } from "../src/modules/tracking/ingest.service";
@@ -11,7 +12,7 @@ const db = createTestDb();
 const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379");
 const mapping = new HouseholdMappingService(db);
 const ingest = new IngestService(db, redis);
-const resident = new ResidentService(db, mapping, ingest);
+const resident = new ResidentService(db, mapping, ingest, new RollupsService(db));
 
 afterAll(async () => {
   await db.destroy();

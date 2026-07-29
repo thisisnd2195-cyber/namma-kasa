@@ -112,6 +112,24 @@ export default function ComplaintsPage() {
                 >
                   {complaint.status.replace("_", " ")}
                 </span>
+                {/* The SLA state is why an admin picks this row over that one. */}
+                {complaint.slaEscalated ? (
+                  <span className="rounded-full bg-[var(--color-danger-container)] px-2 py-0.5 text-[length:var(--text-label)] font-medium text-[var(--color-danger)]">
+                    Escalated
+                  </span>
+                ) : complaint.slaBreached ? (
+                  <span className="rounded-full bg-[var(--color-danger-container)] px-2 py-0.5 text-[length:var(--text-label)] text-[var(--color-danger)]">
+                    Past SLA
+                  </span>
+                ) : (
+                  complaint.slaDueAt &&
+                  complaint.status !== "resolved" &&
+                  complaint.status !== "rejected" && (
+                    <span className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
+                      Due {new Date(complaint.slaDueAt).toLocaleString()}
+                    </span>
+                  )
+                )}
                 <span className="ml-auto text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
                   {new Date(complaint.createdAt).toLocaleString()}
                 </span>

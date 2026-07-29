@@ -10,6 +10,7 @@ import { GeoModule } from "./modules/geo/geo.module";
 import { FleetModule } from "./modules/fleet/fleet.module";
 import { TrackingModule } from "./modules/tracking/tracking.module";
 import { ResidentModule } from "./modules/resident/resident.module";
+import { IssuesModule } from "./modules/issues/issues.module";
 import { NotifyModule } from "./modules/notify/notify.module";
 import { ComplaintsModule } from "./modules/complaints/complaints.module";
 import { ComplianceModule } from "./modules/compliance/compliance.module";
@@ -38,6 +39,7 @@ import { AuditInterceptor } from "./common/interceptors/audit.interceptor";
     TrackingModule,
     ResidentModule,
     NotifyModule,
+    IssuesModule,
     ComplaintsModule,
     ComplianceModule,
   ],

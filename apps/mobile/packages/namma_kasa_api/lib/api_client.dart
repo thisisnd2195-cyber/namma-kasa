@@ -203,14 +203,16 @@ class ApiClient {
           return DriverAssignmentRoute.fromJson(value);
         case 'DriverAssignmentToday':
           return DriverAssignmentToday.fromJson(value);
+        case 'DriverIssueRecord':
+          return DriverIssueRecord.fromJson(value);
+        case 'DriverIssuesPostRequest':
+          return DriverIssuesPostRequest.fromJson(value);
         case 'DriverTripsIdEndPatchRequest':
           return DriverTripsIdEndPatchRequest.fromJson(value);
         case 'DriverTripsIdMediaConfirmPost201Response':
           return DriverTripsIdMediaConfirmPost201Response.fromJson(value);
         case 'DriverTripsIdMediaConfirmPostRequest':
           return DriverTripsIdMediaConfirmPostRequest.fromJson(value);
-        case 'DriverTripsIdMediaConfirmPostRequestGeo':
-          return DriverTripsIdMediaConfirmPostRequestGeo.fromJson(value);
         case 'DriverTripsIdMediaPresignPost201Response':
           return DriverTripsIdMediaPresignPost201Response.fromJson(value);
         case 'DriverTripsIdMediaPresignPostRequest':
@@ -225,6 +227,8 @@ class ApiClient {
           return DriverTripsIdPingsPostRequestPingsInner.fromJson(value);
         case 'DriverTripsPostRequest':
           return DriverTripsPostRequest.fromJson(value);
+        case 'GeoPoint':
+          return GeoPoint.fromJson(value);
         case 'Household':
           return Household.fromJson(value);
         case 'LoginRequest':

@@ -3,6 +3,7 @@ import { COMPLAINT_DAILY_LIMIT, type AccessClaims } from "@namma-kasa/shared";
 import { createTestDb } from "./helpers/db";
 import { ComplaintsService } from "../src/modules/complaints/complaints.service";
 import { NotifyService } from "../src/modules/notify/notify.service";
+import { LoggingSahaayaClient } from "../src/modules/complaints/sahaaya";
 import type { PushMessage, PushSender } from "../src/modules/notify/push-sender";
 import { serviceDateIST } from "../src/modules/tracking/trips.service";
 
@@ -15,7 +16,7 @@ class SilentPushSender implements PushSender {
 }
 
 const notify = new NotifyService(db, new SilentPushSender());
-const complaints = new ComplaintsService(db, notify);
+const complaints = new ComplaintsService(db, notify, new LoggingSahaayaClient());
 
 afterAll(async () => {
   await db.destroy();
@@ -202,5 +203,105 @@ describe("ratings (FR-CMP-05)", () => {
     await expect(complaints.rate(resident.userId, { stars: 1 })).rejects.toThrow(
       /already rated/i,
     );
+  });
+});
+
+describe("complaint SLA (FR-CMP-03)", () => {
+  it("stamps a due time from the operator's configured hours", async () => {
+    const resident = await seededResident();
+    await db
+      .updateTable("operators")
+      .set({
+        config: {
+          defaultComplaintSlaHours: 6,
+          complaintSlaHours: { missed_pickup: 2 },
+          escalateAfterHours: 24,
+          sahaayaSyncEnabled: false,
+        },
+      })
+      .where(
+        "id",
+        "=",
+        db.selectFrom("wards").select("operator_id").where("id", "=", resident.wardId!),
+      )
+      .execute();
+
+    const before = Date.now();
+    const complaint = await complaints.create(resident.userId, {
+      category: "missed_pickup",
+      mediaUrls: [],
+    });
+
+    // The category override wins over the operator default.
+    expect(complaint.slaDueAt).not.toBeNull();
+    const hours = (complaint.slaDueAt!.getTime() - before) / 3_600_000;
+    expect(hours).toBeGreaterThan(1.9);
+    expect(hours).toBeLessThan(2.1);
+  });
+
+  it("falls back to the default hours for a category with no override", async () => {
+    const resident = await seededResident();
+    const before = Date.now();
+    const complaint = await complaints.create(resident.userId, {
+      category: "behavior",
+      mediaUrls: [],
+    });
+
+    const hours = (complaint.slaDueAt!.getTime() - before) / 3_600_000;
+    expect(hours).toBeGreaterThan(5.9);
+    expect(hours).toBeLessThan(6.1);
+  });
+
+  it("flags a breach only while the complaint is still open", async () => {
+    const resident = await seededResident();
+    const complaint = await complaints.create(resident.userId, {
+      category: "late",
+      mediaUrls: [],
+    });
+
+    // Backdate the due time rather than wait six hours for it.
+    await db
+      .updateTable("complaints")
+      .set({ sla_due_at: new Date(Date.now() - 60_000) })
+      .where("id", "=", complaint.id)
+      .execute();
+
+    const [breached] = (await complaints.listForWard(resident.wardId!)).filter(
+      (c) => c.id === complaint.id,
+    );
+    expect(breached.slaBreached).toBe(true);
+    expect(breached.slaEscalated).toBe(false);
+
+    // Resolving stops the clock: a closed complaint is never "past SLA".
+    await complaints.updateStatus(
+      complaint.id,
+      { status: "resolved" },
+      await wardAdmin(resident.wardId!),
+    );
+    const [resolved] = (await complaints.listForWard(resident.wardId!)).filter(
+      (c) => c.id === complaint.id,
+    );
+    expect(resolved.slaBreached).toBe(false);
+  });
+
+  it("escalates once the breach is older than the configured window", async () => {
+    const resident = await seededResident();
+    const complaint = await complaints.create(resident.userId, {
+      category: "late",
+      mediaUrls: [],
+    });
+
+    // Due 25 hours ago, against a 24-hour escalation window.
+    await db
+      .updateTable("complaints")
+      .set({ sla_due_at: new Date(Date.now() - 25 * 3_600_000) })
+      .where("id", "=", complaint.id)
+      .execute();
+
+    const [escalated] = (await complaints.listForWard(resident.wardId!)).filter(
+      (c) => c.id === complaint.id,
+    );
+    expect(escalated.slaBreached).toBe(true);
+    expect(escalated.slaEscalated).toBe(true);
   });
 });

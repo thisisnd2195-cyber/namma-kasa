@@ -46,6 +46,13 @@ export const adminComplaintSchema = complaintSchema.extend({
     servedOnComplaintDay: z.boolean(),
     lastCollectedAt: z.coerce.date().nullable(),
   }),
+  /**
+   * Past its SLA and still not closed (FR-CMP-03). Computed server-side so the
+   * queue and any escalation agree on one clock rather than the browser's.
+   */
+  slaBreached: z.boolean(),
+  /** Breached for long enough to be the operator's problem, not the ward's. */
+  slaEscalated: z.boolean(),
 });
 
 export type AdminComplaint = z.infer<typeof adminComplaintSchema>;

@@ -13,10 +13,8 @@ import 'package:namma_kasa_api/api.dart' hide ApiException;
 import '../core/theme.dart';
 import 'feedback_screen.dart';
 import 'live_stream.dart';
+import 'proximity.dart';
 import 'settings_sheet.dart';
-
-/// Generated name for the shared {lat, lng} object.
-typedef GeoPoint = DriverTripsIdMediaConfirmPostRequestGeo;
 
 /// The screen that answers "when is the auto coming?".
 ///
@@ -35,6 +33,8 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
   String? _error;
   bool _loading = true;
   Timer? _poll;
+  int? _ratedStars;
+  bool _rating = false;
 
   @override
   void initState() {
@@ -62,6 +62,19 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
       if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// FR-CMP-06: the prompt is the whole interaction, so it submits in place.
+  Future<void> _rate(int stars) async {
+    setState(() => _rating = true);
+    try {
+      await ref.read(apiProvider).rateToday(stars);
+      if (mounted) setState(() => _ratedStars = stars);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _rating = false);
     }
   }
 
@@ -97,7 +110,12 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                   'passNumber': a.passNumber,
                   'lat': a.lat,
                   'lng': a.lng,
-                  'distanceM': _distanceTo(pin, a.lat, a.lng),
+                  // No pin yet means the household is still pending review,
+                  // and the banner below replaces these cards anyway.
+                  'distanceM': pin == null
+                      ? 0
+                      : distanceMetres(
+                          pin.lat.toDouble(), pin.lng.toDouble(), a.lat, a.lng),
                 })
             .toList()
         : polled;
@@ -121,6 +139,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
               MaterialPageRoute<void>(
                 builder: (_) => FeedbackScreen(
                   canRateToday: _home?.canRateToday ?? false,
+                  missedToday: _home?.missedToday ?? false,
                 ),
               ),
             ),
@@ -169,6 +188,44 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                       color: const Color(0xFF7A5300),
                     )
                   else ...[
+                    // The auto has been past and today is unrated: ask now,
+                    // while the collection is still what just happened
+                    // (FR-CMP-06). Waiting for the resident to go looking for
+                    // the form is how ratings never get given.
+                    if ((home?.canRateToday ?? false) && _ratedStars == null)
+                      _Card(
+                        theme: theme,
+                        children: [
+                          Text(l10n.rateThisCollection, style: theme.textTheme.titleMedium),
+                          const SizedBox(height: Tokens.space2),
+                          Row(
+                            children: [
+                              for (var star = 1; star <= 5; star++)
+                                IconButton(
+                                  iconSize: 36,
+                                  tooltip: '$star',
+                                  icon: const Icon(Icons.star_border),
+                                  // Rating from the prompt itself: sending the
+                                  // resident to another screen to finish is
+                                  // how a one-tap rating stops being one tap.
+                                  onPressed: _rating ? null : () => unawaited(_rate(star)),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    if (_ratedStars != null)
+                      _Banner(
+                        text: 'Thanks for rating.',
+                        background: Tokens.successContainer,
+                        color: Tokens.success,
+                      ),
+                    if (home?.missedToday ?? false)
+                      _Banner(
+                        text: 'No auto reached your house before the window closed.',
+                        background: Tokens.warningContainer,
+                        color: const Color(0xFF7A5300),
+                      ),
                     if (autos.isEmpty)
                       _Card(
                         theme: theme,
@@ -193,14 +250,32 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                               auto['registrationNumber'] as String,
                               style: theme.textTheme.titleMedium,
                             ),
-                            Semantics(
-                              liveRegion: true,
-                              label: 'Auto ${auto['registrationNumber']} is '
-                                  '${_distanceLabel((auto['distanceM'] as num).toInt())}',
-                              child: Text(
-                                _distanceLabel((auto['distanceM'] as num).toInt()),
-                                style: theme.textTheme.displaySmall,
-                              ),
+                            Builder(
+                              builder: (_) {
+                                final metres = (auto['distanceM'] as num).toInt();
+                                final label = distanceLabel(metres, l10n);
+                                final minutes = minutesAway(metres);
+                                return Semantics(
+                                  liveRegion: true,
+                                  label: 'Auto ${auto['registrationNumber']} is $label'
+                                      '${minutes == null ? '' : ', ${l10n.minutesAway(minutes)}'}',
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(label, style: theme.textTheme.displaySmall),
+                                      // The minutes are the answer to "should I
+                                      // go down now?"; the metres alone are not.
+                                      if (minutes != null)
+                                        Text(
+                                          l10n.minutesAway(minutes),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                             Text(
                               l10n.passProgress(
@@ -253,26 +328,6 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
     );
   }
 
-  /// Straight-line metres, good enough to render a distance chip.
-  int _distanceTo(GeoPoint? pin, double lat, double lng) {
-    if (pin == null) return 0;
-    const metresPerDegree = 111_320.0;
-    final dLat = (lat - pin.lat.toDouble()) * metresPerDegree;
-    final dLng = (lng - pin.lng.toDouble()) * metresPerDegree * 0.97;
-    return (dLat * dLat + dLng * dLng).abs().toInt() == 0
-        ? 0
-        : (dLat.abs() + dLng.abs()).round();
-  }
-
-  /// Rounded to 50 m, matching the notification copy, so the map and the push
-  /// never disagree about how far away the auto is.
-  String _distanceLabel(int metres) {
-    if (metres < 50) return 'At your street';
-    final rounded = (metres / 50).round() * 50;
-    return rounded >= 1000
-        ? '${(rounded / 1000).toStringAsFixed(1)} km away'
-        : '$rounded m away';
-  }
 }
 
 class _Card extends StatelessWidget {
