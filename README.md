@@ -109,7 +109,8 @@ pnpm --filter @namma-kasa/api test          # 227 tests against live Postgres/Re
 pnpm --filter @namma-kasa/api coverage      # line coverage by file
 pnpm contracts:check                        # OpenAPI in sync, and every served route documented
 pnpm contracts:generate                     # regenerate OpenAPI + Dart client
-cd apps/mobile && flutter analyze && flutter test   # 49 tests
+cd apps/mobile && flutter analyze && flutter test   # 52 tests
+pnpm e2e                                    # 49 end-to-end checks against a running stack
 ```
 
 ## Status

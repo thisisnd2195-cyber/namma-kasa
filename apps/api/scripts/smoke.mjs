@@ -9,22 +9,33 @@
  * outbox draining through the push sender.
  *
  * Usage:
- *   node dist/src/main.js > api.log &          # start the server
- *   node scripts/smoke.mjs http://localhost:4100 api.log
+ *   node dist/src/main.js &                    # start the server
+ *   node scripts/smoke.mjs http://localhost:4100
  */
-import { readFileSync } from "node:fs";
 import mqtt from "mqtt";
 import pg from "pg";
+import Redis from "ioredis";
 import { WebSocket } from "ws";
 
 const BASE = process.argv[2] ?? "http://localhost:4100";
-const LOG_FILE = process.argv[3] ?? "/tmp/smoke-api.log";
+const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const DB_URL =
   process.env.DATABASE_URL ?? "postgres://nammakasa:devpassword@localhost:5433/nammakasa";
 const MQTT_URL = process.env.MQTT_URL ?? "mqtt://localhost:1883";
 
 const db = new pg.Client({ connectionString: DB_URL });
 await db.connect();
+const redis = new Redis(REDIS_URL);
+
+/**
+ * OTP sends are capped at 5 per number per hour and 1 per 30s (FR-AUTH-02).
+ * That is correct against abuse and wrong for a suite that must be runnable
+ * twice in a row, so the counters are cleared for the numbers this test owns —
+ * never for anything else, and the limiter itself stays in force.
+ */
+async function clearOtpLimits(phone) {
+  await redis.del(`otp:hourly:${phone}`, `otp:cooldown:${phone}`, `otp:attempts:${phone}`);
+}
 
 // ---------------------------------------------------------------- harness
 
@@ -68,12 +79,25 @@ async function api(method, path, { token, body } = {}) {
   return { status: response.status, body: json, text };
 }
 
-/** The console OTP sender prints `[dev-otp] <phone> <code>` to the log. */
-function otpFromLog(phone) {
-  const log = readFileSync(LOG_FILE, "utf8");
-  const matches = [...log.matchAll(new RegExp(`\\[dev-otp\\]\\s+${phone}\\s+(\\d{6})`, "g"))];
-  if (matches.length === 0) throw new Error(`no OTP in log for ${phone}`);
-  return matches[matches.length - 1][1];
+/**
+ * The OTP, read from where the service actually stores it.
+ *
+ * This used to scrape the server log. That is what a developer does by eye,
+ * but stdout redirected to a file is block-buffered, so a freshly written line
+ * can sit unflushed for minutes behind a long-running process — the read then
+ * either finds nothing or, worse, returns a stale code from an earlier run and
+ * fails later as a confusing "Incorrect code". Redis is the source of truth
+ * and has no such lag.
+ */
+async function otpFor(phone) {
+  const code = await redis.get(`otp:${phone}`);
+  if (!code) {
+    throw new Error(
+      `no OTP stored for ${phone}. Did POST /auth/otp/send succeed, ` +
+        `and is REDIS_URL pointing at the same Redis the API uses?`,
+    );
+  }
+  return code;
 }
 
 async function waitFor(checkFn, budgetMs = 20_000, everyMs = 500) {
@@ -86,19 +110,26 @@ async function waitFor(checkFn, budgetMs = 20_000, everyMs = 500) {
 }
 
 async function registerViaOtp(phone, registration) {
+  await clearOtpLimits(phone);
   let send = await api("POST", "/auth/otp/send", { body: { phone } });
   if (send.status === 429) {
-    // The resend cooldown (FR-AUTH-02). Do what the app does: wait it out.
-    const waitSec = Number(/\d+/.exec(send.body?.detail ?? "31")?.[0] ?? 31) + 1;
+    // Two different limits answer 429: a 30s resend cooldown, and a hard cap of
+    // 5 per number per hour. Waiting only helps the first, so say which it is
+    // rather than retrying into a wall.
+    const detail = send.body?.detail ?? "";
+    if (!/\d+\s*s/.test(detail)) {
+      throw new Error(`OTP refused for ${phone} and waiting will not help: ${detail}`);
+    }
+    const waitSec = Number(/\d+/.exec(detail)?.[0] ?? 31) + 1;
     console.log(`  … OTP cooldown active for ${phone}, waiting ${waitSec}s`);
     await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
     send = await api("POST", "/auth/otp/send", { body: { phone } });
+    if (send.status !== 202) throw new Error(`otp send ${send.status}: ${send.text}`);
   }
   if (send.status !== 202) throw new Error(`otp send ${send.status}: ${send.text}`);
-  await new Promise((resolve) => setTimeout(resolve, 500)); // let the log flush
 
   const verify = await api("POST", "/auth/otp/verify", {
-    body: { phone, code: otpFromLog(phone) },
+    body: { phone, code: await otpFor(phone) },
   });
   if (verify.status !== 200) throw new Error(`otp verify ${verify.status}: ${verify.text}`);
 
@@ -110,14 +141,21 @@ async function registerViaOtp(phone, registration) {
   // Already registered from an earlier run: the app treats this screen as
   // sign-in too, so do the same.
   if (registered.status === 409) {
-    const login = await api("POST", "/auth/login", {
-      body: {
-        phone,
-        password: registration.credential.password,
-        deviceId: registration.deviceId ?? "smoke",
-      },
-    });
+    const credentials = {
+      phone,
+      password: registration.credential.password,
+      deviceId: registration.deviceId ?? "smoke",
+    };
+    let login = await api("POST", "/auth/login", { body: credentials });
+
+    // A driver's session is bound to one device (FR-AUTH-04). Signing in from
+    // a new one answers 428 and revokes the old session, so the retry binds —
+    // this is the double-tap a real driver makes on the sign-in screen.
+    if (login.status === 428) {
+      login = await api("POST", "/auth/login", { body: credentials });
+    }
     if (login.status === 200) return login.body;
+    throw new Error(`sign-in fallback failed: ${login.status} ${login.text}`);
   }
   throw new Error(`register ${registered.status}: ${registered.text}`);
 }
@@ -151,12 +189,18 @@ const widened = await api("PATCH", `/admin/routes/${route.id}`, {
   body: { windowStart: "00:01", windowEnd: "23:59", collectionDays: [1, 2, 3, 4, 5, 6, 7] },
 });
 check(widened.status === 200, "route window widened over the API");
-// Derived pass state from before the widening would leave passes marked
-// skipped; clear today's rows so the day starts clean under the new window.
+// Reset today for this route so the run starts from a known state: pass rows
+// derived under the old window would read as skipped, and a trip left active
+// by an earlier run blocks the next start outright (one active trip per auto).
+// Trip children are ON DELETE CASCADE or SET NULL, so this is safe.
+const today = `(now() AT TIME ZONE 'Asia/Kolkata')::date`;
 await db.query(
-  `DELETE FROM route_pass_days WHERE route_id = $1 AND service_date = (now() AT TIME ZONE 'Asia/Kolkata')::date`,
+  `DELETE FROM route_pass_days WHERE route_id = $1 AND service_date = ${today}`,
   [route.id],
 );
+await db.query(`DELETE FROM trips WHERE route_id = $1 AND service_date = ${today}`, [
+  route.id,
+]);
 
 section("3. A new resident registers in Kannada, pin inside the route area");
 // Drop the pin at the centroid of the serviceable area, as a resident would
@@ -170,8 +214,16 @@ const pin = {
   lng: ring.reduce((s, [lng]) => s + lng, 0) / ring.length,
   lat: ring.reduce((s, [, lat]) => s + lat, 0) / ring.length,
 };
-const RESIDENT_PHONE = "919888811111";
-await db.query(`DELETE FROM users WHERE phone = $1`, [RESIDENT_PHONE]); // repeatable runs
+// A fresh number per run. OTP sends are capped at 5 per number per hour
+// (FR-AUTH-02), so a fixed number makes the test self-limiting: the sixth run
+// in an hour gets 429 forever, and the retry only waits out the 30s cooldown.
+// A new resident each run is also what actually happens in the field.
+const RESIDENT_PHONE = `9198888${String(Math.floor(Math.random() * 90000) + 10000)}`;
+// Sweep accounts left by earlier runs so the table does not grow without bound.
+await db.query(
+  `DELETE FROM users WHERE phone LIKE '9198888%' AND phone <> ALL($1::text[])`,
+  [["919888800001", "919888800002", "919888800003"]],
+);
 
 const residentSession = await registerViaOtp(RESIDENT_PHONE, {
   role: "resident",
@@ -201,6 +253,13 @@ const deviceReg = await api("POST", "/notifications/devices", {
 check(deviceReg.status === 204, "push token registered");
 
 section("4. The pre-provisioned driver claims their account by phone");
+// Release the driver so the claim runs for real each time. Without this the
+// test depends on a password set by whoever last signed in on a device, which
+// is exactly the kind of hidden coupling that makes a suite unrepeatable.
+await db.query(
+  `DELETE FROM users WHERE id IN (SELECT user_id FROM drivers WHERE phone = '919999900001' AND user_id IS NOT NULL)`,
+);
+await db.query(`UPDATE drivers SET user_id = NULL WHERE phone = '919999900001'`);
 const driverSession = await registerViaOtp("919999900001", {
   role: "driver",
   credential: { password: "devpassword" },
@@ -424,6 +483,7 @@ check(
 // ------------------------------------------------------------------ summary
 
 await db.end();
+redis.disconnect();
 const passed = results.filter((r) => r.ok).length;
 console.log(`\n${passed}/${results.length} checks passed${failures ? ` — ${failures} FAILED` : ""}`);
 process.exit(failures === 0 ? 0 : 1);

@@ -125,23 +125,37 @@ pnpm --filter @namma-kasa/api coverage            # line coverage by file (curre
 cd apps/mobile && flutter analyze && flutter test # 49 tests
 ```
 
-### Live smoke test
+### End-to-end suites
 
-The vitest suites boot modules in-process. `apps/api/scripts/smoke.mjs` goes one
-step further: it drives a **running server** through the whole product journey —
-OTP registration read from the log, the per-trip MQTT device JWT against EMQX
-(including the ACL refusing another trip's topic), the resident's real
-WebSocket, Kannada push copy through the outbox drain, complaint evidence, the
-recorded route path, the dashboard, and DPDP erasure. 34 checks.
+The vitest suites boot modules in-process. These three drive the product
+through the interfaces a real user touches, and each found defects the layers
+above it could not see:
 
 ```sh
-pnpm --filter @namma-kasa/api seed              # clean known state
-docker exec namma-kasa-redis-1 redis-cli FLUSHALL
-node dist/src/main.js > /tmp/smoke-api.log &    # with the usual env, PORT=4100
-node scripts/smoke.mjs http://localhost:4100 /tmp/smoke-api.log
+pnpm e2e                                # all three, in order
 ```
 
-Re-seed between runs: each run consumes one of the route's passes.
+| Suite | What it drives | Checks |
+|---|---|---|
+| `apps/api/scripts/smoke.mjs` | A running server over HTTP, MQTT and WebSocket, with real data | 34 |
+| `scripts/e2e-portal.mjs` | The portal in a real browser, signed in through the real form | 11 |
+| `apps/mobile/integration_test/` | The resident's screens on a real device against the real backend | 4 |
+
+Prerequisites, because these deliberately mock nothing: `docker compose up -d`,
+a seeded database, the API on :4000, the portal on :3000, and — for the mobile
+suite — an Android device. **Set `ANDROID_SERIAL` when more than one device is
+attached**; the runner refuses to guess rather than installing onto whichever
+emulator answered first.
+
+Each suite resets only the state it owns. The smoke test uses a fresh phone
+number per run (OTP sends are capped at 5 per number per hour), releases the
+pre-provisioned driver so the claim runs for real, and clears today's trips for
+the seeded route — a trip left active by an earlier run blocks the next start
+outright, since one auto may have only one.
+
+The portal suite doubles as a regression guard for the two hydration bugs that
+reached users: a deep link that redirected to login on the first null render,
+and a map that never initialised on a hard load. Reintroducing either fails it.
 
 The API tests run against **live infrastructure**, not mocks, and share one
 database. A spec that mutates shared fixtures must snapshot and restore them —

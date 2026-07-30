@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "contracts:generate": "bash scripts/generate-dart-client.sh",
     "contracts:check": "bash scripts/check-contracts.sh",
-    "diagrams:check": "node scripts/check-diagrams.mjs"
+    "diagrams:check": "node scripts/check-diagrams.mjs",
+    "e2e": "bash scripts/e2e.sh"
   },
   "devDependencies": {
     "prettier": "^3.5.0",

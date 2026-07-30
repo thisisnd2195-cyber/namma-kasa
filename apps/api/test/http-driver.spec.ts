@@ -341,7 +341,12 @@ describe("a driver's day over HTTP", () => {
       .where("id", "=", tripId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe("completed");
-    expect(row.service_date).toBe(serviceDateIST());
+    // pg hands back a `date` column as a Date at IST midnight, not the
+    // yyyy-mm-dd string serviceDateIST returns. This assertion never ran until
+    // the trip could actually start, and compared the two directly when it did.
+    const serviceDate = new Date(row.service_date as unknown as string)
+      .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    expect(serviceDate).toBe(serviceDateIST());
   });
 
   it("refuses to end a trip twice", async () => {
