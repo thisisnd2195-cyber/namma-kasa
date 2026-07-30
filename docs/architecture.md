@@ -4,6 +4,21 @@ How Namma Kasa is put together, and why. For setup and day-to-day operation see
 [operations.md](./operations.md); for the requirements this implements see
 [`specs/001-waste-collection-tracking/spec.md`](../specs/001-waste-collection-tracking/spec.md).
 
+**Diagrams** — [system context](#system-context) ·
+[module graph](#module-graph) ·
+[the path a GPS ping takes](#the-path-a-gps-ping-takes) ·
+[contract pipeline](#contract-pipeline) ·
+[data model](#data-model) ·
+[trip lifecycle](#trip-lifecycle) ·
+[complaint lifecycle](#complaint-lifecycle) ·
+[deployment](#deployment) ·
+[trust boundaries](#trust-boundaries) ·
+[surviving a dead zone](#surviving-a-dead-zone)
+
+All ten are Mermaid, so they render on GitHub and stay diffable in review.
+`pnpm diagrams:check` renders each one to prove it parses — a diagram that looks
+right in a code fence is exactly as verified as a route that typechecks.
+
 ## The problem shape
 
 Two facts drive every decision below.
@@ -55,6 +70,56 @@ nothing, and the ingest path benefits from being a single process that can hand 
 position to the geofence without a network hop. The module boundaries are real
 (`apps/api/src/modules/*`), so splitting later is a refactor rather than a
 rewrite.
+
+### Module graph
+
+The boundaries are real, and their direction is load-bearing.
+
+```mermaid
+graph TD
+    subgraph platform[" "]
+        Db[(DbModule)]
+        Redis[(RedisModule)]
+    end
+
+    Auth[AuthModule]
+    Geo[GeoModule]
+    Fleet[FleetModule]
+    Tracking[TrackingModule]
+    Notify[NotifyModule]
+    Complaints[ComplaintsModule]
+    Issues[IssuesModule]
+    Resident[ResidentModule]
+    Compliance[ComplianceModule]
+
+    Auth --> Geo
+    Tracking --> Auth
+    Notify --> Tracking
+    Complaints --> Notify
+    Issues --> Auth
+    Issues --> Notify
+    Resident --> Geo
+    Resident --> Tracking
+    Resident --> Compliance
+
+    Db -.-> Auth
+    Db -.-> Geo
+    Redis -.-> Tracking
+
+    classDef infra fill:#F6F6F8,stroke:#9CA3AF,color:#6B7280
+    class Db,Redis infra
+```
+
+**`NotifyModule` importing `TrackingModule` is the constraint everything else
+bends around.** Ingest emits positions, the geofence consumes them, so notify
+must depend on tracking and never the reverse. That is why driver quick-reports
+live in their own `IssuesModule`: the feature needs `NotifyService`, and putting
+it in `TrackingModule` would have closed a cycle.
+
+`ResidentModule` imports `ComplianceModule` for `RollupsService` — which
+`ComplianceModule` must therefore **export**. It did not, for three phases, and
+the API could not start; nothing caught it because no test had ever called
+`NestFactory.create`. `test/http*.spec.ts` now boots the real container.
 
 ## The path a GPS ping takes
 
@@ -242,6 +307,183 @@ tokens, so they are cycled after 60 minutes with a `reauth` frame.
 
 Residents never receive driver personal details — only the auto's registration
 number and its position (FR-RES-07, a DPDP obligation).
+
+## Trip lifecycle
+
+A trip is the unit of evidence, so how it ends matters as much as how it runs.
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: driver starts pass n
+    note right of active
+        Requires pass n-1 completed,
+        aborted, or auto-skipped (FR-DRV-02)
+    end note
+
+    active --> completed: driver ends trip
+    active --> completed: watchdog force-end at 45 min
+    active --> aborted: admin intervention
+
+    completed --> [*]
+    aborted --> [*]
+```
+
+The watchdog sweeps every 30 s and escalates rather than jumping straight to
+force-ending, because a silent phone and an abandoned auto look identical from
+the server:
+
+| Elapsed | Signal | Who sees it |
+|---|---|---|
+| 3 min without a ping | "Tracking dropped" | Ward dashboard |
+| 30 min without movement | Confirmation prompt | Driver's phone |
+| 45 min unreachable | Force-end as `auto_idle` | Recorded on the trip |
+
+`route_pass_days` tracks each pass separately (`pending → active → completed /
+aborted / skipped`), and a pass whose window elapses unstarted is marked
+`skipped` so the next pass is not blocked forever.
+
+## Complaint lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: resident files
+    open --> in_review: admin picks it up
+    open --> resolved
+    open --> rejected
+    in_review --> resolved
+    in_review --> rejected
+    resolved --> [*]
+    rejected --> [*]
+```
+
+Transitions are enforced server-side — `resolved` and `rejected` are terminal, so
+a closed complaint cannot be reopened to game the SLA clock. `sla_due_at` is
+stamped **at creation** from the owning operator's configured hours, not derived
+on read, so a later policy change cannot silently re-date complaints raised under
+the old one. Breach and escalation are computed in SQL against one clock rather
+than the browser's.
+
+Every complaint carries the GPS verdict for the day it was raised, so
+"we did come" is settled by the trail rather than by argument.
+
+## Deployment
+
+```mermaid
+graph TB
+    subgraph dev["Local development"]
+        direction LR
+        colima["Colima VM"]
+        pg[("postgres :5433<br/>PostGIS + TimescaleDB")]
+        rd[("redis :6379")]
+        eq["emqx :1883 / :18083"]
+        mn[("minio :9000 / :9001")]
+        colima --- pg
+        colima --- rd
+        colima --- eq
+        colima --- mn
+    end
+
+    subgraph pilot["Pilot — ap-south-1, single managed environment"]
+        direction LR
+        api2["API<br/>(Nest, one process)"]
+        pg2[("Managed Postgres<br/>provider backups")]
+        rd2[("Managed Redis")]
+        eq2["EMQX"]
+        s3[("S3")]
+        api2 --- pg2
+        api2 --- rd2
+        api2 --- eq2
+        api2 --- s3
+    end
+
+    dev -.->|"same compose topology"| pilot
+```
+
+Postgres is published on **5433** locally because a Homebrew Postgres commonly
+owns 5432. Infrastructure-as-code, blue-green deploys and PITR are deliberately
+deferred past pilot — required before city rollout, not before the first ward.
+
+Deploy order is fixed by the generated contract: **migrations → API → portal →
+mobile build**. Older app versions must keep working, so a contract change that
+breaks them is a breaking change.
+
+## Trust boundaries
+
+Authorization is enforced in three different places, deliberately in three
+different ways.
+
+```mermaid
+graph LR
+    subgraph device["Untrusted"]
+        app["Resident / Driver app"]
+        portal["Admin portal"]
+    end
+
+    subgraph edge["Enforcement"]
+        guards["AuthGuard → RateLimitGuard<br/>→ WardScopeGuard<br/>(global, in order)"]
+        acl["EMQX JWT acl claim<br/>NO_MATCH deny"]
+        ws["WebSocket upgrade<br/>claims.routeId comparison"]
+    end
+
+    subgraph trusted["Trusted"]
+        svc["Services"]
+        audit[("audit_log")]
+    end
+
+    portal -->|"REST + Bearer"| guards
+    app -->|"REST + Bearer"| guards
+    app -->|"MQTT + per-trip JWT"| acl
+    app -->|"WS + Bearer"| ws
+
+    guards --> svc
+    acl --> svc
+    ws --> svc
+    svc -.->|"every admin mutation"| audit
+```
+
+- **Route guards** run globally in order: authenticate, rate-limit, then scope a
+  Ward Admin to their own ward. The portal's own gate is cosmetic.
+- **Broker ACL** grants a driver's token publish rights to exactly one topic,
+  `trips/{tripId}/pings`. A compromised device can publish to one trip, and EMQX
+  disconnects on any other topic rather than silently dropping.
+- **WebSocket upgrade** compares a JWT claim instead of consulting broker rules,
+  because a claim comparison is far easier to audit.
+
+Residents never receive driver personal details — only the auto's registration
+number and its position (FR-RES-07, a DPDP obligation).
+
+## Surviving a dead zone
+
+The trail is the evidence, so the app is built to lose none of it.
+
+```mermaid
+sequenceDiagram
+    participant GPS as Device GPS
+    participant Spool as PingSpool
+    participant Net as MQTT / HTTPS
+    participant API
+
+    GPS->>Spool: position every 5 s or 25 m
+    Spool->>Net: publish batch (max 20)
+    Net->>API: accepted
+    API-->>Spool: ack
+
+    Note over Net: coverage lost
+    GPS->>Spool: positions keep accumulating
+    Spool->>Net: publish fails
+    Note over Spool: nothing dropped, unbounded<br/>for the trip's duration
+
+    Note over Net: coverage returns
+    Spool->>Net: replay oldest first, in seq order
+    Net->>API: accepted
+    API-->>Spool: ack up to highest seq
+    Note over Spool: entries at or below<br/>that seq are released
+```
+
+The server drops any ping whose sequence is at or below the highest it has
+already accepted for that trip, so a QoS-1 redelivery or an over-eager replay
+costs nothing. That per-trip ceiling lives in Redis and **outlives a test run** —
+a suite whose sequence numbers restart lower has every ping dropped in silence.
 
 ## Where things live
 

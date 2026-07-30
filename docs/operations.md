@@ -119,6 +119,7 @@ Everything below must pass before a merge.
 ```sh
 pnpm typecheck && pnpm lint && pnpm build
 pnpm contracts:check                              # OpenAPI in sync + every route documented
+pnpm diagrams:check                               # every Mermaid diagram in docs/ renders
 pnpm --filter @namma-kasa/api test                # 227 tests, needs Postgres/Redis/EMQX/MinIO
 pnpm --filter @namma-kasa/api coverage            # line coverage by file (currently ~86%)
 cd apps/mobile && flutter analyze && flutter test # 49 tests
