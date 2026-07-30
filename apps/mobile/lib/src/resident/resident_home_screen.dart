@@ -92,6 +92,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
     final pin = home?.household.pin;
     // Socket positions win over the polled snapshot: they are newer.
     final live = ref.watch(liveStreamProvider);
+    final isLive = live.isNotEmpty;
     final polled = (home?.servingAutos ?? [])
         .map((a) => {
               'tripId': a.tripId,
@@ -102,7 +103,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
               'distanceM': a.distanceM,
             })
         .toList();
-    final autos = live.isNotEmpty
+    final autos = isLive
         ? live.values
             .map((a) => {
                   'tripId': a.tripId,
@@ -111,7 +112,7 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
                   'lat': a.lat,
                   'lng': a.lng,
                   // No pin yet means the household is still pending review,
-                  // and the banner below replaces these cards anyway.
+                  // and the sheet below replaces these cards anyway.
                   'distanceM': pin == null
                       ? 0
                       : distanceMetres(
@@ -120,235 +121,285 @@ class _ResidentHomeScreenState extends ConsumerState<ResidentHomeScreen> {
             .toList()
         : polled;
 
+    final nearestM = autos.isEmpty
+        ? null
+        : autos
+            .map((a) => (a['distanceM'] as num).toInt())
+            .reduce((a, b) => a < b ? a : b);
+    final minutes = nearestM == null ? null : minutesAway(nearestM);
+
+    // Full-bleed map, floating controls, draggable sheet (DS-01).
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.residentHomeTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.alertSettings,
-            icon: const Icon(Icons.tune),
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              builder: (_) => const ResidentSettingsSheet(),
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.reportProblem,
-            icon: const Icon(Icons.report_problem_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => FeedbackScreen(
-                  canRateToday: _home?.canRateToday ?? false,
-                  missedToday: _home?.missedToday ?? false,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          children: [
-            SizedBox(
-              height: 280,
-              child: MapView(
-                centre: pin == null ? kBengaluruCentre : LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
-                markers: [
-                  if (pin != null)
-                    MapMarker(
-                      id: 'home',
-                      position: LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
-                      color: Tokens.textSecondary,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: MapView(
+              centre: pin == null
+                  ? kBengaluruCentre
+                  : LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
+              markers: [
+                if (pin != null)
+                  MapMarker(
+                    id: 'home',
+                    position: LatLng(pin.lat.toDouble(), pin.lng.toDouble()),
+                    color: Tokens.textPrimary,
+                  ),
+                for (final auto in autos)
+                  MapMarker(
+                    id: auto['tripId'] as String,
+                    position: LatLng(
+                      (auto['lat'] as num).toDouble(),
+                      (auto['lng'] as num).toDouble(),
                     ),
-                  for (final auto in autos)
-                    MapMarker(
-                      id: auto['tripId'] as String,
-                      position: LatLng(
-                        (auto['lat'] as num).toDouble(),
-                        (auto['lng'] as num).toDouble(),
+                    // The live auto is the accent (DS-02/06).
+                    color: Tokens.primary,
+                    label: auto['registrationNumber'] as String,
+                  ),
+              ],
+            ),
+          ),
+
+          // Floating controls over the map.
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(Tokens.space4),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FloatButton(
+                        icon: Icons.arrow_back,
+                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                        onTap: () => Navigator.of(context).maybePop(),
                       ),
-                      color: Tokens.success,
-                      label: auto['registrationNumber'] as String,
+                      const Spacer(),
+                      Column(
+                        children: [
+                          FloatButton(
+                            icon: Icons.tune,
+                            tooltip: l10n.alertSettings,
+                            onTap: () => showModalBottomSheet<void>(
+                              context: context,
+                              builder: (_) => const ResidentSettingsSheet(),
+                            ),
+                          ),
+                          const SizedBox(height: Tokens.space3),
+                          FloatButton(
+                            icon: Icons.report_problem_outlined,
+                            tooltip: l10n.reportProblem,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => FeedbackScreen(
+                                  canRateToday: _home?.canRateToday ?? false,
+                                  missedToday: _home?.missedToday ?? false,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  // The ETA pill: the one thing worth floating over the map.
+                  if (minutes != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Tokens.space1),
+                      child: Pill(
+                        text: l10n.minutesAway(minutes),
+                        background: theme.colorScheme.surface,
+                        foreground: theme.colorScheme.onSurface,
+                        dot: Tokens.primary,
+                        floating: true,
+                      ),
                     ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(Tokens.space4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          ),
+
+          DraggableScrollableSheet(
+            initialChildSize: 0.42,
+            minChildSize: 0.22,
+            maxChildSize: 0.88,
+            builder: (context, controller) => Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(Tokens.radiusSheet),
+                ),
+                boxShadow: Tokens.sheetShadow,
+              ),
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(
+                    Tokens.space4 + 4, 0, Tokens.space4 + 4, Tokens.space6),
                 children: [
+                  const SheetGrabber(),
                   if (_error != null)
-                    _Banner(text: _error!, background: Tokens.errorContainer, color: Tokens.error),
+                    _Banner(
+                        text: _error!,
+                        background: Tokens.errorContainer,
+                        color: Tokens.error),
                   if (route == null)
                     _Banner(
                       text: l10n.pendingReview,
                       background: Tokens.warningContainer,
-                      color: const Color(0xFF7A5300),
+                      color: Tokens.warning,
                     )
                   else ...[
-                    // The auto has been past and today is unrated: ask now,
-                    // while the collection is still what just happened
-                    // (FR-CMP-06). Waiting for the resident to go looking for
-                    // the form is how ratings never get given.
-                    if ((home?.canRateToday ?? false) && _ratedStars == null)
-                      _Card(
-                        theme: theme,
+                    if (autos.isEmpty)
+                      _SheetHeader(
+                        icon: Icons.schedule,
+                        title: l10n.noActiveTrip,
+                        subtitle: l10n.nextCollection(
+                          '${route.windowStart} – ${route.windowEnd}',
+                        ),
+                      )
+                    else
+                      for (final auto in autos)
+                        _SheetHeader(
+                          icon: Icons.electric_rickshaw,
+                          title: distanceLabel(
+                              (auto['distanceM'] as num).toInt(), l10n),
+                          subtitle:
+                              '${auto['registrationNumber']} · ${l10n.passProgress(auto['passNumber'] as int, route.passesPerDay)}',
+                          trailing: isLive
+                              ? const Pill(
+                                  text: 'LIVE',
+                                  background: Tokens.successContainer,
+                                  foreground: Tokens.success,
+                                  dot: Tokens.success,
+                                )
+                              : null,
+                        ),
+                    const SizedBox(height: Tokens.space4),
+                    Wrap(
+                      spacing: Tokens.space2,
+                      runSpacing: Tokens.space2,
+                      children: [
+                        for (final waste
+                            in route.todayWasteTypes.map((w) => w.toString()))
+                          Chip(label: Text(waste)),
+                        Pill(
+                          text: '${route.windowStart} – ${route.windowEnd}',
+                          background: Tokens.surfaceAlt,
+                          foreground: Tokens.textSecondary,
+                        ),
+                      ],
+                    ),
+                    // Rate in place, the moment the collection is fresh
+                    // (FR-CMP-06).
+                    if ((home?.canRateToday ?? false) && _ratedStars == null) ...[
+                      const SizedBox(height: Tokens.space4),
+                      const Divider(height: 1),
+                      const SizedBox(height: Tokens.space4),
+                      Row(
                         children: [
-                          Text(l10n.rateThisCollection, style: theme.textTheme.titleMedium),
-                          const SizedBox(height: Tokens.space2),
-                          Row(
-                            children: [
-                              for (var star = 1; star <= 5; star++)
-                                IconButton(
-                                  iconSize: 36,
-                                  tooltip: '$star',
-                                  icon: const Icon(Icons.star_border),
-                                  // Rating from the prompt itself: sending the
-                                  // resident to another screen to finish is
-                                  // how a one-tap rating stops being one tap.
-                                  onPressed: _rating ? null : () => unawaited(_rate(star)),
-                                ),
-                            ],
+                          Expanded(
+                            child: Text(l10n.rateThisCollection,
+                                style: theme.textTheme.titleMedium),
                           ),
+                          for (var star = 1; star <= 5; star++)
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                  minWidth: 36, minHeight: 44),
+                              iconSize: 28,
+                              tooltip: '$star',
+                              icon: const Icon(Icons.star_border,
+                                  color: Tokens.primary),
+                              onPressed:
+                                  _rating ? null : () => unawaited(_rate(star)),
+                            ),
                         ],
                       ),
-                    if (_ratedStars != null)
+                    ],
+                    if (_ratedStars != null) ...[
+                      const SizedBox(height: Tokens.space3),
                       _Banner(
                         text: l10n.thanksForRating,
                         background: Tokens.successContainer,
                         color: Tokens.success,
                       ),
-                    if (home?.missedToday ?? false)
+                    ],
+                    if (home?.missedToday ?? false) ...[
+                      const SizedBox(height: Tokens.space3),
                       _Banner(
                         text: l10n.missedTodayBanner,
                         background: Tokens.warningContainer,
-                        color: const Color(0xFF7A5300),
+                        color: Tokens.warning,
                       ),
-                    if (autos.isEmpty)
-                      _Card(
-                        theme: theme,
-                        children: [
-                          Text(l10n.noActiveTrip, style: theme.textTheme.titleMedium),
-                          const SizedBox(height: Tokens.space1),
-                          Text(
-                            l10n.nextCollection(
-                              '${route.windowStart} – ${route.windowEnd}',
-                            ),
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ],
-                      )
-                    else
-                      for (final auto in autos)
-                        _Card(
-                          theme: theme,
-                          background: Tokens.successContainer,
-                          children: [
-                            Text(
-                              auto['registrationNumber'] as String,
-                              style: theme.textTheme.titleMedium,
-                            ),
-                            Builder(
-                              builder: (_) {
-                                final metres = (auto['distanceM'] as num).toInt();
-                                final label = distanceLabel(metres, l10n);
-                                final minutes = minutesAway(metres);
-                                return Semantics(
-                                  liveRegion: true,
-                                  label: 'Auto ${auto['registrationNumber']} is $label'
-                                      '${minutes == null ? '' : ', ${l10n.minutesAway(minutes)}'}',
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(label, style: theme.textTheme.displaySmall),
-                                      // The minutes are the answer to "should I
-                                      // go down now?"; the metres alone are not.
-                                      if (minutes != null)
-                                        Text(
-                                          l10n.minutesAway(minutes),
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                            Text(
-                              l10n.passProgress(
-                                auto['passNumber'] as int,
-                                route.passesPerDay,
+                    ],
+                    if (home?.lastCollectedAt != null) ...[
+                      const SizedBox(height: Tokens.space3),
+                      Text(
+                        l10n.lastCollected(
+                          DateFormat.yMMMd().add_jm().format(
+                                DateTime.parse(home!.lastCollectedAt!).toLocal(),
                               ),
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ],
                         ),
-                    const SizedBox(height: Tokens.space3),
-                    _Card(
-                      theme: theme,
-                      children: [
-                        Text(l10n.todayLabel, style: theme.textTheme.titleMedium),
-                        const SizedBox(height: Tokens.space2),
-                        Wrap(
-                          spacing: Tokens.space2,
-                          children: [
-                            for (final waste
-                                in route.todayWasteTypes.map((w) => w.toString()))
-                              Chip(label: Text(waste), side: BorderSide.none),
-                          ],
-                        ),
-                        const SizedBox(height: Tokens.space2),
-                        Text(
-                          '${route.windowStart} – ${route.windowEnd}',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        if (home?.lastCollectedAt != null)
-                          Text(
-                            l10n.lastCollected(
-                              DateFormat.yMMMd().add_jm().format(
-                                    DateTime.parse(home!.lastCollectedAt!).toLocal(),
-                                  ),
-                            ),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                   ],
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-
 }
 
-class _Card extends StatelessWidget {
-  const _Card({required this.theme, required this.children, this.background});
+/// The sheet's lead row: icon tile, bold headline, sub line (DS-04).
+class _SheetHeader extends StatelessWidget {
+  const _SheetHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
 
-  final ThemeData theme;
-  final List<Widget> children;
-  final Color? background;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: Tokens.space2),
-      padding: const EdgeInsets.all(Tokens.space4),
-      decoration: BoxDecoration(
-        color: background ?? theme.colorScheme.surface,
-        border: Border.all(color: theme.colorScheme.outline),
-        borderRadius: BorderRadius.circular(Tokens.radiusCard),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Tokens.primaryContainer,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: Tokens.primaryPressed, size: 24),
+        ),
+        const SizedBox(width: Tokens.space3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                liveRegion: true,
+                child: Text(title, style: theme.textTheme.headlineSmall),
+              ),
+              const SizedBox(height: 2),
+              Text(subtitle,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+        ?trailing,
+      ],
     );
   }
 }
@@ -363,13 +414,17 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: Tokens.space3),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: Tokens.space2),
       padding: const EdgeInsets.all(Tokens.space3),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(Tokens.radiusInput),
+        borderRadius: BorderRadius.circular(Tokens.radiusCard),
       ),
-      child: Text(text, style: TextStyle(color: color)),
+      child: Semantics(
+        liveRegion: true,
+        child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+      ),
     );
   }
 }

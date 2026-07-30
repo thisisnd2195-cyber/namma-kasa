@@ -107,7 +107,7 @@ export default function FleetPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* ---------------------------------------------------------- autos */}
-          <section className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+          <section className="card">
             <h2 className="border-b border-[var(--color-outline)] px-4 py-3 text-[length:var(--text-title)] font-medium">
               Autos
             </h2>
@@ -241,7 +241,7 @@ export default function FleetPage() {
           </section>
 
           {/* -------------------------------------------------------- drivers */}
-          <section className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+          <section className="card">
             <h2 className="border-b border-[var(--color-outline)] px-4 py-3 text-[length:var(--text-title)] font-medium">
               Drivers
             </h2>

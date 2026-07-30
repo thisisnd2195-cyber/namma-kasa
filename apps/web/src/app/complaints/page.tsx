@@ -101,7 +101,7 @@ export default function ComplaintsPage() {
           {complaints.map((complaint) => (
             <li
               key={complaint.id}
-              className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4"
+              className="card p-4"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[length:var(--text-body)] font-medium">
@@ -202,7 +202,7 @@ export default function ComplaintsPage() {
             </li>
           ))}
           {complaints.length === 0 && (
-            <li className="rounded-[var(--radius-card)] border border-[var(--color-outline)] px-4 py-10 text-center text-[length:var(--text-body)] text-[var(--color-text-secondary)]">
+            <li className="card px-4 py-10 text-center text-[length:var(--text-body)] text-[var(--color-text-secondary)]">
               Nothing here.
             </li>
           )}

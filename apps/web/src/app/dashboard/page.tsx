@@ -100,7 +100,7 @@ export default function DashboardPage() {
             {missed.map((m) => (
               <li
                 key={m.householdId}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius-card)] border border-[var(--color-outline)] px-4 py-3"
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 card px-4 py-3"
               >
                 <span className="text-[length:var(--text-body)] font-medium">{m.fullName}</span>
                 <span className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
@@ -112,7 +112,7 @@ export default function DashboardPage() {
               </li>
             ))}
             {missed.length === 0 && (
-              <li className="rounded-[var(--radius-card)] border border-[var(--color-outline)] px-4 py-10 text-center text-[length:var(--text-body)] text-[var(--color-text-secondary)]">
+              <li className="card px-4 py-10 text-center text-[length:var(--text-body)] text-[var(--color-text-secondary)]">
                 Every house whose window has closed was reached.
               </li>
             )}
@@ -136,13 +136,13 @@ function Stat({
 }) {
   const tones = {
     success: "text-[var(--color-success)]",
-    warning: "text-[#7a5300]",
+    warning: "text-[var(--color-warning)]",
     danger: "text-[var(--color-danger)]",
   };
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4">
+    <div className="card p-5">
       <p className="text-[length:var(--text-label)] text-[var(--color-text-secondary)]">{label}</p>
-      <p className={`mt-1 text-3xl font-medium ${tone ? tones[tone] : ""}`}>{value}</p>
+      <p className={`mt-1 text-[2.125rem] font-extrabold tracking-tight ${tone ? tones[tone] : ""}`}>{value}</p>
       <p className="mt-1 text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
         {detail}
       </p>

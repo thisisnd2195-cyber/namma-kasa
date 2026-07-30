@@ -70,7 +70,7 @@ export default function ReviewQueuePage() {
         {error && <Banner tone="danger">{error}</Banner>}
         {notice && <Banner tone="success">{notice}</Banner>}
 
-        <ul className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+        <ul className="card">
           {items.map((item) => (
             <li key={item.id} className="border-b border-[var(--color-outline)] p-4 last:border-0">
               <div className="flex items-center gap-2">

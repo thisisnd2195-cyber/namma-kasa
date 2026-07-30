@@ -211,7 +211,7 @@ export default function LivePage() {
             </div>
           )}
 
-          <ul className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+          <ul className="card">
             {positions.map((position) => (
               <li
                 key={position.autoId}
@@ -244,7 +244,7 @@ export default function LivePage() {
           </ul>
         </section>
 
-        <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+        <section className="overflow-hidden card">
           <div ref={attachMap} className="h-[calc(100dvh-8rem)] w-full" />
         </section>
       </main>

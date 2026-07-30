@@ -159,7 +159,7 @@ export default function WardsPage() {
 
           {error && <Banner tone="danger">{error}</Banner>}
 
-          <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4">
+          <div className="card p-4">
             <h2 className="text-[length:var(--text-title)] font-medium">Bulk import</h2>
             <p className="mt-1 text-[length:var(--text-label)] text-[var(--color-text-secondary)]">
               GeoJSON FeatureCollection. Each feature needs a ward_code and name.
@@ -194,7 +194,7 @@ export default function WardsPage() {
 
           <form
             onSubmit={createWard}
-            className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4"
+            className="card p-4"
           >
             <h2 className="text-[length:var(--text-title)] font-medium">Draw a ward</h2>
             <Field label="Name" value={name} onChange={setName} required />
@@ -218,7 +218,7 @@ export default function WardsPage() {
           </form>
 
           {selected && drawn && (
-            <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4">
+            <div className="card p-4">
               <h2 className="text-[length:var(--text-title)] font-medium">
                 Reshape {selected.wardCode}
               </h2>
@@ -260,7 +260,7 @@ export default function WardsPage() {
             </div>
           )}
 
-          <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+          <div className="card">
             <h2 className="border-b border-[var(--color-outline)] px-4 py-3 text-[length:var(--text-title)] font-medium">
               {wards.length} ward{wards.length === 1 ? "" : "s"}
             </h2>
@@ -287,7 +287,7 @@ export default function WardsPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+        <section className="overflow-hidden card">
           <AreaMap
             editable
             value={drawn}

@@ -23,6 +23,7 @@ class MapView extends StatefulWidget {
     this.markers = const [],
     this.onMapReady,
     this.onCentreChanged,
+    this.area,
   });
 
   final LatLng centre;
@@ -33,6 +34,10 @@ class MapView extends StatefulWidget {
   /// Fires as the map settles. Pin-drop uses a fixed crosshair over a moving
   /// map, so the "pin" is simply wherever the camera has come to rest.
   final ValueChanged<LatLng>? onCentreChanged;
+
+  /// An area to shade — a route's serviceable polygon (FR-DRV-01, DS-06).
+  /// Drawn as a soft accent fill with a stronger outline.
+  final List<LatLng>? area;
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -78,6 +83,18 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  Future<void> _drawArea() async {
+    final controller = _controller;
+    final area = widget.area;
+    if (controller == null || area == null || area.length < 3) return;
+    await controller.addFill(
+      FillOptions(geometry: [area], fillColor: '#EA580C', fillOpacity: 0.10),
+    );
+    await controller.addLine(
+      LineOptions(geometry: area, lineColor: '#EA580C', lineWidth: 2.5),
+    );
+  }
+
   Future<void> _syncMarkers() async {
     final controller = _controller;
     if (controller == null) return;
@@ -107,7 +124,10 @@ class _MapViewState extends State<MapView> {
         _controller = controller;
         widget.onMapReady?.call(MapController(controller));
       },
-      onStyleLoadedCallback: _syncMarkers,
+      onStyleLoadedCallback: () {
+        unawaited(_drawArea());
+        unawaited(_syncMarkers());
+      },
       onCameraIdle: () {
         final centre = _controller?.cameraPosition?.target;
         if (centre != null) widget.onCentreChanged?.call(centre);

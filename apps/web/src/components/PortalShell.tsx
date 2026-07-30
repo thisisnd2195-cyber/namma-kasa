@@ -43,8 +43,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
-      <header className="flex items-center gap-6 border-b border-[var(--color-outline)] px-6 py-3">
-        <Link href="/" className="text-[length:var(--text-title)] font-medium">
+      <header className="flex items-center gap-6 border-b border-[var(--color-outline)] bg-[var(--color-surface)] px-6 py-3">
+        <Link href="/" className="text-[length:var(--text-title)] font-extrabold tracking-tight">
           Namma Kasa
         </Link>
         <nav className="flex gap-1">
@@ -56,7 +56,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={`rounded-full px-3 py-1.5 text-[length:var(--text-body)] transition-colors ${
                   active
-                    ? "bg-[var(--color-primary-container)] text-[var(--color-primary-pressed)]"
+                    ? "bg-[var(--color-primary-container)] font-semibold text-[var(--color-primary-pressed)]"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"
                 }`}
               >

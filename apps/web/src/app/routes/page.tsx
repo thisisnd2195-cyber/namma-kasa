@@ -242,7 +242,7 @@ export default function RoutesPage() {
 
           <form
             onSubmit={createRoute}
-            className="rounded-[var(--radius-card)] border border-[var(--color-outline)] p-4"
+            className="card p-4"
           >
             <h2 className="text-[length:var(--text-title)] font-medium">New route</h2>
             <Field label="Name" value={name} onChange={setName} required />
@@ -322,7 +322,7 @@ export default function RoutesPage() {
             </button>
           </form>
 
-          <div className="rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+          <div className="card">
             <h2 className="border-b border-[var(--color-outline)] px-4 py-3 text-[length:var(--text-title)] font-medium">
               {routes.length} route{routes.length === 1 ? "" : "s"}
             </h2>
@@ -349,7 +349,7 @@ export default function RoutesPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-outline)]">
+        <section className="overflow-hidden card">
           <AreaMap
             editable
             value={drawn}

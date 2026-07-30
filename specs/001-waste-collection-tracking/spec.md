@@ -431,52 +431,58 @@ document (SPEC-WCT-001) for traceability.
 
 ## Design System & Visual Language
 
-**Source of truth**: the token set below (Google/Material-3-style, decided 2026-07-29 —
-supersedes the earlier claude.ai design-file reference, which is inaccessible to tooling).
-Tokens are mirrored into Flutter `ThemeData` and the portal Tailwind theme per DS-05.
+**Source of truth**: Tokens v2 below (decided 2026-07-30, approved from rendered mocks —
+supersedes the Google/Material-3 neutral set of 2026-07-29). The direction is the
+map-first pattern language of ride-hailing apps (Uber's Base system), with **orange as
+the single accent wherever that language uses black**. Tokens are mirrored into Flutter
+`ThemeData` and the portal Tailwind theme per DS-05.
 
-- **DS-01 (Neutral palette)**: The UI uses a restrained, Google-style neutral palette:
-  white/near-white surfaces, a gray ramp for text and dividers, and at most one subdued
-  accent for primary actions. Large areas of saturated brand color are prohibited.
-- **DS-02 (Functional color only)**: Saturated color is reserved for meaning, never
-  decoration: status signals (trip active, tracking dropped, complaint states, alert
-  banners) and map markers. Status colors MUST be distinguishable by more than hue alone
-  (icon/label), per NFR-11.
-- **DS-03 (Typography)**: A single clean grotesque family across surfaces (Google-style,
-  e.g., Roboto/Google Sans class), with **Noto Sans Kannada** as the paired Kannada face;
-  one shared type scale used by both apps and the portal.
-- **DS-04 (Component language)**: Material-3-aligned components on all surfaces: low
-  elevation, generous whitespace, 8 dp spacing grid, consistent corner radii from the
-  design file; the driver surface uses the scale's largest touch variants (≥ 56 dp,
-  FR-DRV-02).
-- **DS-05 (Consistency across codebases)**: Because mobile (Flutter) and web (React) share
-  no UI code (constitution Principle III), design tokens are the consistency mechanism:
-  one token definition set (from the design file) is mirrored into Flutter `ThemeData` and
-  the portal's Tailwind theme, and any token change MUST update both in the same change set.
-- **DS-06 (Map styling)**: Map basemaps follow the same neutrality — light, low-contrast
-  tile styling so status markers and boundaries carry the color meaning.
+- **DS-01 (Map-first, floating UI)**: On mobile, map screens are **full-bleed**: the map
+  fills the viewport, controls float over it as circular buttons and pills with soft
+  shadows, and content lives in a **draggable bottom sheet** (28 dp top radius, grabber
+  bar). No fixed app bars on map screens. Non-map screens keep conventional layout.
+- **DS-02 (Orange is action and liveness, never prose)**: The accent `#EA580C` is
+  reserved for primary CTAs, the live auto marker and its trail, active navigation
+  state, and live/ETA pills. Body text, headings and labels stay ink/grey — orange
+  text on white is prohibited below 18 px (contrast), and large saturated fills are
+  limited to buttons and markers. Status colors (success/warn/danger) remain
+  functional-only and MUST be distinguishable by more than hue (icon/label, NFR-11).
+- **DS-03 (Typography)**: One bold grotesque scale across surfaces (system/Inter class,
+  Uber-Move-like weights: 700–800 for headlines, tight letter-spacing), with
+  **Noto Sans Kannada** as the paired Kannada face. Driver floor unchanged: body ≥ 16,
+  control labels ≥ 18 (FR-DRV-02).
+- **DS-04 (Component language)**: Cards float — soft shadow, 16 dp radius, no borders.
+  Sheets 28 dp top radius. Buttons are full-width, **56 dp**, bold, 14 dp radius:
+  primary orange, destructive red, secondary grey ghost. Status is expressed as
+  **pills/chips** (soft tinted background + strong foreground), not bare text.
+- **DS-05 (Consistency across codebases)**: Mobile (Flutter) and web (React) share no UI
+  code (constitution Principle III); this token set is the consistency mechanism. Any
+  token change MUST update Flutter `ThemeData` and the portal Tailwind theme in the
+  same change set.
+- **DS-06 (Map styling)**: Light, low-contrast basemap (OpenFreeMap Positron class) so
+  the orange marker/trail and status colors carry all meaning. The auto is an orange
+  puck with a white ring and soft glow; the home pin is ink with a white ring.
 
-### Design Tokens (v1)
+### Design Tokens (v2)
 
-**Neutrals (light)** — `surface #FFFFFF` · `surface-alt #F8F9FA` · `outline/divider #DADCE0`
-· `text-primary #202124` · `text-secondary #5F6368` · `text-disabled #9AA0A6`
-**Neutrals (dark, app only)** — `surface #202124` · `surface-alt #292A2D` · `outline #3C4043`
-· `text-primary #E8EAED` · `text-secondary #9AA0A6`
-**Accent (the one allowed accent, DS-01)** — `primary #1A73E8` · `primary-pressed #185ABC`
-· `primary-container #E8F0FE`
-**Status (functional color only, DS-02)** — active/success `#188038` (container `#E6F4EA`)
-· warning/degraded `#F9AB00` (container `#FEF7E0`) · error/dropped/overdue `#D93025`
-(container `#FCE8E6`) · info = primary
-**Typography** — Roboto (EN) + Noto Sans Kannada (KN), single scale: Display 28/36 ·
-Headline 22/28 · Title 16/24 (500) · Body 14/20 · Label 12/16 (500). Driver surface floor:
-Body ≥ 16, control labels ≥ 18 (FR-DRV-02).
-**Shape** — buttons/chips: full pill · inputs (outlined): 8 dp · cards: 12 dp ·
-sheets/dialogs: 16 dp
-**Elevation** — 0 by default; 1 dp cards; 3 dp dialogs/FAB; shadows subtle
-(never as a color substitute)
-**Spacing** — 8 dp grid with 4 dp half-steps; 16 dp screen margins
-**Iconography** — Material Symbols, outlined style, filled variant for active states
-
+**Ink & neutrals** — `ink #0B0B0F` · `sub #6B7280` · `faint #9CA3AF` ·
+`surface #FFFFFF` · `bg #F6F6F8` · `line #ECECEE`
+**Accent (DS-02)** — `orange #EA580C` · `orange-pressed #C2410C` ·
+`orange-soft #FFF1E7` · `orange-line #FED7AA`
+**Status (functional only)** — success `#0F8A3D` (soft `#E8F6EE`) ·
+warning `#B45309` (soft `#FEF3C7`) · danger `#D92D20` (soft `#FEE4E2`)
+**Dark (app only)** — `surface #131316` · `bg #0B0B0F` · `line #26262B` ·
+ink/sub invert; orange unchanged
+**Typography** — system grotesque (EN) + Noto Sans Kannada (KN):
+Display 26/32 (800, −0.02 em) · Headline 22/28 (800) · Title 17/24 (700) ·
+Body 14/20 (400) · Label 13/18 (600). Driver floor per DS-03.
+**Shape** — sheet top 28 dp · card 16 dp · button 14 dp · chip/pill full ·
+input 12 dp · floating circular button 44 dp
+**Elevation** — cards/floats `0 8px 24px rgba(11,11,15,.14)` +
+`0 2px 6px rgba(11,11,15,.08)`; sheets `0 −12px 40px rgba(11,11,15,.16)`;
+portal cards `0 8px 28px rgba(11,11,15,.06)`; borders are not used where a
+shadow can do the separation
+**Spacing** — 8 dp grid, 4 dp half-steps; sheet padding 20 dp; screen margins 16 dp
 ## Assumptions
 
 - **Locked decisions (from SPEC-WCT-001 §1.4)**: Android-only launch (Android 8+ / 2 GB RAM floor);

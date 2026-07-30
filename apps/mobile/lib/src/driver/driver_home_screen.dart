@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../core/api.dart';
 import '../core/api_client.dart';
+import '../core/map/map_view.dart';
 import 'package:namma_kasa_api/api.dart' hide ApiException;
 
 import '../../l10n/app_localizations.dart';
@@ -188,57 +189,153 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     }
   }
 
+  /// The route's serviceable polygon, for the full-bleed map (FR-DRV-01).
+  List<LatLng>? get _routeArea {
+    final geo = _assignment?.route.serviceableArea;
+    if (geo == null) return null;
+    try {
+      final json = geo as Map<String, dynamic>;
+      final type = json['type'] as String?;
+      final coords = json['coordinates'] as List<dynamic>;
+      final ring = (type == 'MultiPolygon'
+          ? (coords[0] as List<dynamic>)[0]
+          : coords[0]) as List<dynamic>;
+      return [
+        for (final point in ring.cast<List<dynamic>>())
+          LatLng((point[1] as num).toDouble(), (point[0] as num).toDouble()),
+      ];
+    } on Object {
+      return null; // an undrawable area is not worth an error
+    }
+  }
+
+  LatLng get _mapCentre {
+    final area = _routeArea;
+    if (area == null || area.isEmpty) return kBengaluruCentre;
+    final lat = area.map((p) => p.latitude).reduce((a, b) => a + b) / area.length;
+    final lng = area.map((p) => p.longitude).reduce((a, b) => a + b) / area.length;
+    return LatLng(lat, lng);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = applyDriverScale(Theme.of(context));
     final status = ref.watch(tripTrackerProvider);
+    final data = _assignment;
 
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Your route'),
-          actions: [
-            // Always reachable, trip or no trip: a breakdown does not wait for
-            // the driver to have started (FR-DRV-07).
-            IconButton(
-              tooltip: L10n.of(context).reportIssue,
-              icon: const Icon(Icons.report_problem_outlined),
-              onPressed: () async {
-                final sent = await showModalBottomSheet<bool>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => const DriverIssueSheet(),
-                );
-                if (sent == true && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(L10n.of(context).issueSent)),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _load,
-                child: ListView(
-                  padding: const EdgeInsets.all(Tokens.space4),
-                  children: [
-                    if (_error != null) _Notice(text: _error!, tone: Tokens.error),
-                    if (_assignment == null)
-                      Text(
-                        'No assignment yet. Contact your Ward Admin.',
-                        style: theme.textTheme.bodyMedium,
-                      )
-                    else
-                      ..._assignmentBody(theme, status),
-                  ],
-                ),
+            : Stack(
+                children: [
+                  // Full-bleed route map (DS-01): the driver's day at a glance.
+                  Positioned.fill(
+                    child: MapView(
+                      centre: _mapCentre,
+                      zoom: 13,
+                      area: _routeArea,
+                    ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Tokens.space4),
+                      child: Column(
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FloatButton(
+                                icon: Icons.arrow_back,
+                                tooltip: MaterialLocalizations.of(context)
+                                    .backButtonTooltip,
+                                onTap: () => Navigator.of(context).maybePop(),
+                              ),
+                              const Spacer(),
+                              Column(
+                                children: [
+                                  // Always reachable, trip or no trip: a
+                                  // breakdown does not wait (FR-DRV-07).
+                                  FloatButton(
+                                    icon: Icons.report_problem_outlined,
+                                    tooltip: L10n.of(context).reportIssue,
+                                    onTap: _reportIssue,
+                                  ),
+                                  const SizedBox(height: Tokens.space3),
+                                  FloatButton(
+                                    icon: Icons.refresh,
+                                    tooltip:
+                                        MaterialLocalizations.of(context)
+                                            .refreshIndicatorSemanticLabel,
+                                    onTap: () => unawaited(_load()),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (data != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: Tokens.space1),
+                              child: Pill(
+                                text:
+                                    'Pass ${data.today.passesCompleted} of ${data.today.passesTotal} done',
+                                background: theme.colorScheme.surface,
+                                foreground: theme.colorScheme.onSurface,
+                                floating: true,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  DraggableScrollableSheet(
+                    initialChildSize: 0.46,
+                    minChildSize: 0.24,
+                    maxChildSize: 0.9,
+                    builder: (context, controller) => Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(Tokens.radiusSheet),
+                        ),
+                        boxShadow: Tokens.sheetShadow,
+                      ),
+                      child: ListView(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(
+                            Tokens.space4 + 4, 0, Tokens.space4 + 4, Tokens.space6),
+                        children: [
+                          const SheetGrabber(),
+                          if (_error != null)
+                            _Notice(text: _error!, tone: Tokens.error),
+                          if (data == null)
+                            Text(
+                              'No assignment yet. Contact your Ward Admin.',
+                              style: theme.textTheme.bodyMedium,
+                            )
+                          else
+                            ..._assignmentBody(theme, status),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
       ),
     );
+  }
+
+  Future<void> _reportIssue() async {
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const DriverIssueSheet(),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(L10n.of(context).issueSent)));
+    }
   }
 
   List<Widget> _assignmentBody(ThemeData theme, TripTrackerStatus status) {
@@ -249,52 +346,74 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final activeTrip = data.activeTrip;
 
     final wasteTypes = today.wasteTypes.map((w) => w.toString()).toList();
-    final passesTotal = today.passesTotal;
-    final passesCompleted = today.passesCompleted;
     final nextPass = today.nextPassNumber;
     final isCollectionDay = today.isCollectionDay;
 
     return [
-      _Card(
-        theme: theme,
+      // The lead row: registration plate as identity, route as context.
+      Row(
         children: [
-          Text(auto.registrationNumber, style: theme.textTheme.displaySmall),
-          Text(
-            '${route.routeCode} · ${route.name}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Tokens.textPrimary,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              auto.registrationNumber.substring(0, 2),
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
             ),
           ),
-          const SizedBox(height: Tokens.space3),
-          Text(
-            '${route.windowStart} – ${route.windowEnd}',
-            style: theme.textTheme.titleMedium,
-          ),
-          Text('Pass $passesCompleted of $passesTotal done', style: theme.textTheme.bodyMedium),
-        ],
-      ),
-      const SizedBox(height: Tokens.space3),
-      _Card(
-        theme: theme,
-        children: [
-          Text("Today's collection", style: theme.textTheme.titleMedium),
-          const SizedBox(height: Tokens.space2),
-          if (!isCollectionDay)
-            Text('No collection scheduled today.', style: theme.textTheme.bodyMedium)
-          else if (wasteTypes.isEmpty)
-            Text('Waste types not set for today.', style: theme.textTheme.bodyMedium)
-          else
-            Wrap(
-              spacing: Tokens.space2,
+          const SizedBox(width: Tokens.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final waste in wasteTypes)
-                  Chip(
-                    label: Text(waste),
-                    backgroundColor: Tokens.successContainer,
-                    side: BorderSide.none,
-                  ),
+                Text(auto.registrationNumber,
+                    style: theme.textTheme.headlineSmall),
+                const SizedBox(height: 2),
+                Text(
+                  '${route.routeCode} · ${route.name} · ${route.windowStart} – ${route.windowEnd}',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
+          ),
+          if (activeTrip != null)
+            const Pill(
+              text: 'LIVE',
+              background: Tokens.successContainer,
+              foreground: Tokens.success,
+              dot: Tokens.success,
+            ),
+        ],
+      ),
+      const SizedBox(height: Tokens.space4),
+      Wrap(
+        spacing: Tokens.space2,
+        runSpacing: Tokens.space2,
+        children: [
+          if (!isCollectionDay)
+            const Pill(
+                text: 'No collection today',
+                background: Tokens.surfaceAlt,
+                foreground: Tokens.textSecondary)
+          else if (wasteTypes.isEmpty)
+            const Pill(
+                text: 'Waste types not set',
+                background: Tokens.surfaceAlt,
+                foreground: Tokens.textSecondary)
+          else
+            for (final waste in wasteTypes) Chip(label: Text(waste)),
+          Pill(
+            text: '${today.passesTotal} passes today',
+            background: Tokens.surfaceAlt,
+            foreground: Tokens.textSecondary,
+          ),
         ],
       ),
       const SizedBox(height: Tokens.space4),
@@ -303,14 +422,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         const SizedBox(height: Tokens.space3),
         _PhotoRow(tripId: activeTrip.id, theme: theme),
         const SizedBox(height: Tokens.space3),
-        if (status.idleMinutes >= 30)
+        if (status.idleMinutes >= 30) ...[
           OutlinedButton(
             onPressed: () => _maybePromptIdle(activeTrip.id),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, Tokens.driverTouchTarget),
-            ),
             child: const Text('No movement for a while — finished?'),
           ),
+          const SizedBox(height: Tokens.space3),
+        ],
         Semantics(
           button: true,
           label: 'End the current trip and stop sharing location',

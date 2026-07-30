@@ -77,7 +77,7 @@ prompt the 75 m evidence rule triggers:
 
 | | |
 |---|---|
-| ![Sign-in](docs/screenshots/app-signin-details.png) | ![Live, Kannada](docs/screenshots/app-resident-live-kn.png) |
+| ![Entry](docs/screenshots/app-role-chooser.png) | ![Live, Kannada](docs/screenshots/app-resident-live-kn.png) |
 
 The full set — login, home, wards, fleet, review queue, and more app screens —
 is in [docs/screenshots/](docs/screenshots/).
