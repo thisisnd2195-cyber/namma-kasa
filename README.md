@@ -71,8 +71,16 @@ Captured from a running stack with live data (`scripts/portal-screenshots.mjs`).
 | ![Dashboard](docs/screenshots/portal-dashboard.png) | ![Live map](docs/screenshots/portal-live.png) |
 | ![Routes](docs/screenshots/portal-routes.png) | ![Complaints](docs/screenshots/portal-complaints.png) |
 
-The full set — login, home, wards, fleet, review queue — is in
-[docs/screenshots/](docs/screenshots/).
+And the Flutter app running on an Android emulator against the same stack —
+the resident home in Kannada, with a live auto at the gate and the rating
+prompt the 75 m evidence rule triggers:
+
+| | |
+|---|---|
+| ![Sign-in](docs/screenshots/app-signin-details.png) | ![Live, Kannada](docs/screenshots/app-resident-live-kn.png) |
+
+The full set — login, home, wards, fleet, review queue, and more app screens —
+is in [docs/screenshots/](docs/screenshots/).
 
 ## Documentation
 

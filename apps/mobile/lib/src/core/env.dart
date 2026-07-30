@@ -1,9 +1,11 @@
 /// Build-time configuration. Supplied with --dart-define so the same binary
 /// can point at local, staging, or production without a code change.
 abstract final class Env {
+  // The client uses this verbatim, so the /v1 prefix belongs here — without
+  // it every request from a default emulator build 404s.
   static const apiBase = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'http://10.0.2.2:4000',
+    defaultValue: 'http://10.0.2.2:4000/v1',
   );
 
   /// Broker for driver GPS. Empty disables MQTT and forces the HTTPS fallback.

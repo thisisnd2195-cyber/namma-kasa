@@ -6,11 +6,19 @@ import 'session.dart';
 
 /// Errors surfaced to the UI. The API always answers with RFC 9457
 /// problem+json, so the human-readable reason is in `detail`.
-class ApiException implements Exception {
-  ApiException(this.statusCode, this.message);
+///
+/// Extends DioException rather than wrapping inside one: dio can only reject
+/// with a DioException, and an ApiException carried in `.error` never matched
+/// any screen's `on ApiException catch` — which silently killed every error
+/// handler in the app, including the register-409 → sign-in fallback.
+class ApiException extends DioException {
+  ApiException(this.statusCode, String message, {RequestOptions? requestOptions})
+      : super(requestOptions: requestOptions ?? RequestOptions(), message: message);
 
   final int? statusCode;
-  final String message;
+
+  @override
+  String get message => super.message!;
 
   @override
   String toString() => message;
@@ -19,16 +27,19 @@ class ApiException implements Exception {
 ApiException _toApiException(DioException error) {
   final data = error.response?.data;
   if (data is Map && data['detail'] is String) {
-    return ApiException(error.response?.statusCode, data['detail'] as String);
+    return ApiException(error.response?.statusCode, data['detail'] as String,
+        requestOptions: error.requestOptions);
   }
   if (data is Map && data['title'] is String) {
-    return ApiException(error.response?.statusCode, data['title'] as String);
+    return ApiException(error.response?.statusCode, data['title'] as String,
+        requestOptions: error.requestOptions);
   }
   return ApiException(
     error.response?.statusCode,
     error.type == DioExceptionType.connectionError
         ? 'Cannot reach the server. Check your connection.'
         : 'Something went wrong. Please try again.',
+    requestOptions: error.requestOptions,
   );
 }
 
@@ -104,14 +115,9 @@ final apiClientProvider = Provider<Dio>((ref) {
   dio.interceptors.add(AuthInterceptor(ref, _baseDio()));
   dio.interceptors.add(
     InterceptorsWrapper(
-      onError: (err, handler) => handler.reject(
-        DioException(
-          requestOptions: err.requestOptions,
-          error: _toApiException(err),
-          response: err.response,
-          type: err.type,
-        ),
-      ),
+      // Reject with the ApiException ITSELF (it is a DioException), so
+      // `on ApiException catch` clauses in screens actually match.
+      onError: (err, handler) => handler.reject(_toApiException(err)),
     ),
   );
   return dio;

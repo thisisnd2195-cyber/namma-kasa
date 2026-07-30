@@ -59,6 +59,38 @@ resolves `localhost` to itself.
 SMS is not wired locally. `OTP_SENDER=console` prints codes to the API log as
 `[dev-otp] <phone> <code>`.
 
+### Android emulator (local)
+
+No Android Studio needed. What worked on a clean machine, including the traps:
+
+```sh
+brew install --cask android-commandlinetools
+brew install openjdk@17          # Gradle and sdkmanager both refuse newer JDKs
+export ANDROID_HOME=~/Library/Android/sdk
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+SDKM=/opt/homebrew/share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager
+yes | $SDKM --sdk_root=$ANDROID_HOME --licenses
+$SDKM --sdk_root=$ANDROID_HOME "platform-tools" "emulator"   "platforms;android-36" "build-tools;36.0.0"   "system-images;android-35;google_apis;arm64-v8a"
+mkdir -p $ANDROID_HOME/cmdline-tools
+ln -sfn /opt/homebrew/share/android-commandlinetools/cmdline-tools/latest   $ANDROID_HOME/cmdline-tools/latest   # flutter looks for them INSIDE the SDK
+flutter config --android-sdk $ANDROID_HOME
+yes | flutter doctor --android-licenses
+```
+
+Two traps worth knowing:
+
+- **Flutter compiles against platform 36** even though the app's minSdk is 26;
+  an android-35 system image is fine for the emulator itself.
+- **`avdmanager create avd` fails with "Package path is not valid … null"**
+  under this layout, because it derives the SDK root from its own (symlinked)
+  location. An AVD is just two ini files; write them by hand under
+  `~/.android/avd/` (`namma.ini` + `namma.avd/config.ini` pointing
+  `image.sysdir.1` at the system image) and `emulator -avd namma` boots it.
+
+Run headless with `-no-window`; `adb exec-out screencap -p` still captures the
+display. The default `API_BASE` (`http://10.0.2.2:4000/v1`) reaches an API on
+the host's port 4000, and `MQTT_URL` defaults to `mqtt://10.0.2.2:1883`.
+
 ## Migrations
 
 Raw SQL under `apps/api/migrations/`, applied by `node-pg-migrate`, named
