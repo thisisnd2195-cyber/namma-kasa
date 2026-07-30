@@ -30,7 +30,11 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const session = useSyncExternalStore(subscribeToNothing, readSession, () => null);
 
   useEffect(() => {
-    if (!session) router.replace("/login");
+    // Consult the store directly, not the hook's value: during hydration the
+    // hook reports the server snapshot (null) for the first committed render,
+    // and redirecting on that kicked every signed-in admin to /login on any
+    // hard refresh or deep link — with their valid session still in storage.
+    if (!readSession()) router.replace("/login");
   }, [session, router]);
 
   if (!session) return null;

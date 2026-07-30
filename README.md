@@ -62,6 +62,18 @@ occupies the default port.
 SMS is not wired in development: `OTP_SENDER=console` prints codes to the API log
 as `[dev-otp] <phone> <code>`.
 
+## Screenshots
+
+Captured from a running stack with live data (`scripts/portal-screenshots.mjs`).
+
+| | |
+|---|---|
+| ![Dashboard](docs/screenshots/portal-dashboard.png) | ![Live map](docs/screenshots/portal-live.png) |
+| ![Routes](docs/screenshots/portal-routes.png) | ![Complaints](docs/screenshots/portal-complaints.png) |
+
+The full set — login, home, wards, fleet, review queue — is in
+[docs/screenshots/](docs/screenshots/).
+
 ## Documentation
 
 | Document | Covers |

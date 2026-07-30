@@ -47,20 +47,25 @@ export default function LivePage() {
   const [issues, setIssues] = useState<WireIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
 
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    mapRef.current = new maplibregl.Map({
-      container: containerRef.current,
+  // A ref callback, not a mount effect: PortalShell holds its children back
+  // until the session hydrates, so on a hard load this page commits before the
+  // container exists. A [] effect saw null once and never retried — the live
+  // map only ever initialised after client-side navigation. The callback runs
+  // when the node actually attaches, whenever that is.
+  const attachMap = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const map = new maplibregl.Map({
+      container: node,
       style: "https://tiles.openfreemap.org/styles/positron",
       center: [77.5946, 12.9716],
       zoom: 12,
     });
+    mapRef.current = map;
     return () => {
-      mapRef.current?.remove();
+      map.remove();
       mapRef.current = null;
     };
   }, []);
@@ -240,7 +245,7 @@ export default function LivePage() {
         </section>
 
         <section className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-outline)]">
-          <div ref={containerRef} className="h-[calc(100dvh-8rem)] w-full" />
+          <div ref={attachMap} className="h-[calc(100dvh-8rem)] w-full" />
         </section>
       </main>
     </PortalShell>
