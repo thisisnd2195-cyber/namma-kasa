@@ -12,7 +12,7 @@ import { RollupsService } from "../compliance/rollups.service";
 import { DB, type Db } from "../../db/db.module";
 import { HouseholdMappingService } from "../geo/household-mapping.service";
 import { IngestService, haversineMeters } from "../tracking/ingest.service";
-import { serviceDateIST, weekdayIST } from "../tracking/trips.service";
+import { istDay, serviceDateIST, weekdayIST } from "../tracking/trips.service";
 
 type UpdateHousehold = z.infer<typeof updateHouseholdSchema>;
 type ResidentSettings = z.infer<typeof residentSettingsSchema>;
@@ -135,7 +135,7 @@ export class ResidentService {
       .selectFrom("household_collections")
       .select([
         sql<number>`(extract(epoch from detected_at) * 1000)::float8`.as("detectedMs"),
-        sql<string>`detected_at::date::text`.as("collectionDate"),
+        sql<string>`${istDay("detected_at")}::text`.as("collectionDate"),
       ])
       .where("household_id", "=", household.id)
       .orderBy("detected_at", "desc")

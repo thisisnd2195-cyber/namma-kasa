@@ -5,6 +5,7 @@ import type { CallHandler, ExecutionContext } from "@nestjs/common";
 import { createTestDb } from "./helpers/db";
 import { AuditInterceptor } from "../src/common/interceptors/audit.interceptor";
 import { ProblemFilter } from "../src/common/filters/problem.filter";
+import { MetricsService } from "../src/modules/compliance/metrics.service";
 
 const db = createTestDb();
 
@@ -195,5 +196,70 @@ describe("problem details keep their extension members (FR-WARD-05)", () => {
     expect(body.status).toBe(403);
     expect(body.detail).toBe("Outside your ward");
     expect(body.conflictsWith).toBeUndefined();
+  });
+});
+
+describe("scrape metrics (NFR-09)", () => {
+  const metrics = new MetricsService(db);
+
+  /**
+   * 00:15 IST, an instant whose UTC date is the *previous* day. Fixed rather
+   * than relative to now so the two only ever disagree on purpose: a scrape in
+   * the 00:00–05:30 IST window used to report the previous service day's
+   * counts, because service_date is an IST day but `current_date` is UTC.
+   */
+  const scrapedAt = new Date("2026-03-10T00:15:00+05:30");
+  const serviceDay = "2026-03-10";
+
+  function tripsToday(rendered: string, wardCode: string): number {
+    const line = rendered
+      .split("\n")
+      .find((l) => l.startsWith(`namma_kasa_trips_today{ward="${wardCode}"}`));
+    if (!line) throw new Error(`No trips_today sample for ward ${wardCode}`);
+    return Number(line.split(" ").pop());
+  }
+
+  it("counts a trip by its IST service day, not the server's UTC day", async () => {
+    expect(scrapedAt.toISOString().slice(0, 10)).not.toBe(serviceDay);
+
+    const route = await db
+      .selectFrom("routes as r")
+      .innerJoin("wards as w", "w.id", "r.ward_id")
+      .select(["r.id as routeId", "w.ward_code as wardCode"])
+      .where("w.status", "=", "active")
+      .executeTakeFirstOrThrow();
+    const auto = await db
+      .selectFrom("trips")
+      .select(["auto_id", "driver_id"])
+      .where("route_id", "=", route.routeId)
+      .executeTakeFirstOrThrow();
+
+    await db.deleteFrom("trips").where("service_date", "=", serviceDay).execute();
+    const before = tripsToday(await metrics.render(scrapedAt), route.wardCode);
+
+    await db
+      .insertInto("trips")
+      .values({
+        route_id: route.routeId,
+        auto_id: auto.auto_id,
+        driver_id: auto.driver_id,
+        pass_number: 1,
+        service_date: serviceDay,
+        status: "completed",
+        started_at: scrapedAt,
+        ended_at: scrapedAt,
+        end_reason: "driver",
+      })
+      .execute();
+
+    try {
+      // Only the trip filed under that IST day counts. Reading the server's UTC
+      // day instead would pick up whatever ran on 2026-03-09 — and, in the live
+      // system, would swap the whole ward's numbers back a day until 05:30.
+      expect(before).toBe(0);
+      expect(tripsToday(await metrics.render(scrapedAt), route.wardCode)).toBe(1);
+    } finally {
+      await db.deleteFrom("trips").where("service_date", "=", serviceDay).execute();
+    }
   });
 });

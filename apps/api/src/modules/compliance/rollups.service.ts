@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { sql } from "kysely";
 import type { CityRollup, MissedPickup } from "@namma-kasa/shared";
 import { DB, type Db } from "../../db/db.module";
-import { serviceDateIST, weekdayIST } from "../tracking/trips.service";
+import { istDay, serviceDateIST, weekdayIST } from "../tracking/trips.service";
 
 /**
  * City-wide numbers for the Super Admin (FR-DASH-02) and the missed-pickup
@@ -131,7 +131,7 @@ export class RollupsService {
         AND NOT EXISTS (
           SELECT 1 FROM household_collections hc
           WHERE hc.household_id = h.id
-            AND hc.detected_at::date = ${serviceDate}::date
+            AND ${istDay("hc.detected_at")} = ${serviceDate}::date
         )
       ORDER BY r.ward_id, r.name, h.address_line
       LIMIT 500
@@ -158,7 +158,7 @@ export class RollupsService {
         AND NOT EXISTS (
           SELECT 1 FROM household_collections hc
           WHERE hc.household_id = h.id
-            AND hc.detected_at::date = ${serviceDate}::date
+            AND ${istDay("hc.detected_at")} = ${serviceDate}::date
         )
       ) AS missed
       FROM households h

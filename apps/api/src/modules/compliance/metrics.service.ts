@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { sql } from "kysely";
 import { DB, type Db } from "../../db/db.module";
+import { serviceDateIST } from "../tracking/trips.service";
 
 /**
  * The per-ward tracking-health numbers the spec asks for (NFR-09, CHK046),
@@ -11,9 +12,9 @@ import { DB, type Db } from "../../db/db.module";
 export class MetricsService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async render(): Promise<string> {
+  async render(now = new Date()): Promise<string> {
     const [wards, alerts, outbox] = await Promise.all([
-      this.perWardTripStats(),
+      this.perWardTripStats(now),
       this.notificationLatency(),
       this.outboxDepth(),
     ]);
@@ -49,7 +50,12 @@ export class MetricsService {
     return lines.join("\n");
   }
 
-  private async perWardTripStats() {
+  private async perWardTripStats(now: Date) {
+    // service_date is always written as an IST day, so "today" has to be one
+    // too. `current_date` is the server's UTC day, which lags IST until 05:30
+    // and would report the previous service day's counts every early morning.
+    const today = serviceDateIST(now);
+
     const rows = await sql<{
       ward_code: string;
       active_trips: number;
@@ -58,12 +64,12 @@ export class MetricsService {
     }>`
       SELECT w.ward_code,
              count(*) FILTER (WHERE t.status = 'active')::int AS active_trips,
-             count(t.id) FILTER (WHERE t.service_date = current_date)::int AS trips_today,
+             count(t.id) FILTER (WHERE t.service_date = ${today}::date)::int AS trips_today,
              (
                SELECT count(*)::int FROM route_pass_days rpd
                JOIN routes r2 ON r2.id = rpd.route_id
                WHERE r2.ward_id = w.id
-                 AND rpd.service_date = current_date
+                 AND rpd.service_date = ${today}::date
                  AND rpd.status = 'skipped'
              ) AS skipped_today
       FROM wards w

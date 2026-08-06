@@ -19,7 +19,7 @@ import type { z } from "zod";
 import { DB, type Db } from "../../db/db.module";
 import { NotifyService } from "../notify/notify.service";
 import { SAHAAYA_CLIENT, type SahaayaClient } from "./sahaaya";
-import { serviceDateIST } from "../tracking/trips.service";
+import { istDay, serviceDateIST } from "../tracking/trips.service";
 
 type CreateComplaint = z.infer<typeof createComplaintSchema>;
 type UpdateComplaint = z.infer<typeof updateComplaintSchema>;
@@ -67,7 +67,7 @@ export class ComplaintsService {
       .selectFrom("complaints")
       .select(({ fn }) => fn.countAll<string>().as("count"))
       .where("household_id", "=", household.id)
-      .where(sql<boolean>`created_at::date = ${serviceDateIST()}::date`)
+      .where(sql<boolean>`${istDay("created_at")} = ${serviceDateIST()}::date`)
       .executeTakeFirstOrThrow();
 
     if (Number(todayCount.count) >= COMPLAINT_DAILY_LIMIT) {
@@ -244,7 +244,7 @@ export class ComplaintsService {
         sql<boolean>`EXISTS (
           SELECT 1 FROM household_collections hc
           WHERE hc.household_id = h.id
-            AND hc.detected_at::date = c.created_at::date
+            AND ${istDay("hc.detected_at")} = ${istDay("c.created_at")}
         )`.as("servedOnComplaintDay"),
         sql<number | null>`(
           SELECT (extract(epoch from max(hc.detected_at)) * 1000)::float8
@@ -358,7 +358,7 @@ export class ComplaintsService {
       .selectFrom("household_collections")
       .select(["trip_id", "route_id"])
       .where("household_id", "=", household.id)
-      .where(sql<boolean>`detected_at::date = ${today}::date`)
+      .where(sql<boolean>`${istDay("detected_at")} = ${today}::date`)
       .orderBy("detected_at", "desc")
       .executeTakeFirst();
 

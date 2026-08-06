@@ -8,6 +8,19 @@ export function serviceDateIST(now = new Date()): string {
   return new Date(now.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 }
 
+/**
+ * The SQL counterpart of serviceDateIST, and the only correct way to ask which
+ * service day a stored timestamp belongs to.
+ *
+ * Postgres runs in UTC here, so a bare `col::date` yields the *UTC* day. That
+ * disagrees with the IST service day for every timestamp between 00:00 and
+ * 05:30 IST — so a collection recorded at, say, 04:00 IST was filed under
+ * yesterday and could never be rated, on that day or any later one.
+ */
+export function istDay(column: string) {
+  return sql.raw(`(${column} AT TIME ZONE 'Asia/Kolkata')::date`);
+}
+
 export function weekdayIST(now = new Date()): number {
   const day = new Date(now.getTime() + 5.5 * 3_600_000).getUTCDay();
   return day === 0 ? 7 : day; // ISO: Monday = 1

@@ -165,8 +165,9 @@ describe("ratings (FR-CMP-05)", () => {
       .select(["id", "route_id"])
       .where("route_id", "=", resident.routeId!)
       .orderBy("started_at", "desc")
-      .executeTakeFirst();
-    if (!trip) return null;
+      // The seed guarantees a completed pass, so a missing trip is a broken
+      // fixture, not a reason to let the test pass without asserting anything.
+      .executeTakeFirstOrThrow();
 
     await db
       .insertInto("household_collections")
@@ -179,6 +180,42 @@ describe("ratings (FR-CMP-05)", () => {
       .execute();
     return resident;
   }
+
+  it("counts a small-hours collection as today's, by IST rather than UTC", async () => {
+    const resident = await seededResident();
+    await db.deleteFrom("ratings").where("household_id", "=", resident.householdId).execute();
+    await db
+      .deleteFrom("household_collections")
+      .where("household_id", "=", resident.householdId)
+      .execute();
+
+    const trip = await db
+      .selectFrom("trips")
+      .select(["id", "route_id"])
+      .where("route_id", "=", resident.routeId!)
+      .orderBy("started_at", "desc")
+      .executeTakeFirstOrThrow();
+
+    // 00:15 IST today. Postgres stores it in UTC, where it lands on *yesterday*
+    // — so a bare `detected_at::date` filed this visit under the wrong service
+    // day and the resident could never rate it, that day or any day after.
+    const smallHours = new Date(`${serviceDateIST()}T00:15:00+05:30`);
+    expect(smallHours.toISOString().slice(0, 10)).not.toBe(serviceDateIST());
+
+    await db
+      .insertInto("household_collections")
+      .values({
+        household_id: resident.householdId,
+        trip_id: trip.id,
+        route_id: trip.route_id,
+        pass_number: 1,
+        detected_at: smallHours,
+      })
+      .execute();
+
+    const rating = await complaints.rate(resident.userId, { stars: 5 });
+    expect(rating.collectionDate).toBe(serviceDateIST());
+  });
 
   it("refuses a rating before the auto has been past", async () => {
     const resident = await seededResident();
@@ -194,7 +231,6 @@ describe("ratings (FR-CMP-05)", () => {
 
   it("accepts one rating for the day and refuses a second", async () => {
     const resident = await withCollectionToday();
-    if (!resident) return;
 
     const rating = await complaints.rate(resident.userId, { stars: 4, comment: "On time" });
     expect(rating.stars).toBe(4);
