@@ -10,6 +10,7 @@ import { join } from "node:path";
 import * as argon2 from "argon2";
 import { Kysely, PostgresDialect, sql } from "kysely";
 import { Pool } from "pg";
+import { DEFAULT_COMPLAINT_SLA_HOURS } from "@namma-kasa/shared";
 import type { Database } from "../src/db/types";
 
 const DATABASE_URL =
@@ -19,6 +20,8 @@ const DEV_PASSWORD = "devpassword";
 const SUPER_ADMIN_PHONE = "919000000001";
 const WARD_ADMIN_PHONE = "919000000002";
 const DRIVER_PHONE = "919999900001";
+/** Already signed in, unlike DRIVER_PHONE which the app still has to claim. */
+const VETERAN_DRIVER_PHONE = "919999900002";
 const RESIDENT_PHONES = ["919888800001", "919888800002", "919888800003"];
 
 const db = new Kysely<Database>({
@@ -165,13 +168,65 @@ async function main(): Promise<void> {
     .returningAll()
     .executeTakeFirstOrThrow();
 
-  await db
-    .insertInto("auto_route_assignments")
-    .values({ auto_id: auto.id, route_id: route.id, assigned_by: wardAdmin.id })
-    .execute();
+  const veteranAuto = await db
+    .insertInto("autos")
+    .values({
+      registration_number: "KA01AB5678",
+      capacity_kg: 500,
+      ward_id: ward.id,
+      status: "assigned",
+      onboarded_by: wardAdmin.id,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  // A second driver who has already claimed their account. A ward runs several
+  // drivers and they are not all newly provisioned — and without one, anything
+  // that needs a signed-in driver only works on a database an earlier run
+  // happened to leave behind.
+  const veteranUser = await db
+    .insertInto("users")
+    .values({
+      phone: VETERAN_DRIVER_PHONE,
+      auth_provider: "password",
+      password_hash: passwordHash,
+      role: "driver",
+      locale: "kn",
+      consented_at: new Date(),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  const veteranDriver = await db
+    .insertInto("drivers")
+    .values({
+      ward_id: ward.id,
+      user_id: veteranUser.id,
+      full_name: "Lakshmi Devi",
+      phone: VETERAN_DRIVER_PHONE,
+      license_number: "KA0120170004321",
+      emergency_contact: "919000000008",
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  for (const assigned of [auto, veteranAuto]) {
+    await db
+      .insertInto("auto_route_assignments")
+      .values({ auto_id: assigned.id, route_id: route.id, assigned_by: wardAdmin.id })
+      .execute();
+  }
   await db
     .insertInto("driver_auto_assignments")
     .values({ driver_id: driver.id, auto_id: auto.id, assigned_by: wardAdmin.id })
+    .execute();
+  await db
+    .insertInto("driver_auto_assignments")
+    .values({
+      driver_id: veteranDriver.id,
+      auto_id: veteranAuto.id,
+      assigned_by: wardAdmin.id,
+    })
     .execute();
 
   // Three households along the trail, plus one outside every route so the
@@ -182,6 +237,7 @@ async function main(): Promise<void> {
     [77.5938, 12.9688],
   ];
 
+  const residences: { id: string; full_name: string }[] = [];
   for (const [index, phone] of RESIDENT_PHONES.entries()) {
     const user = await db
       .insertInto("users")
@@ -197,7 +253,7 @@ async function main(): Promise<void> {
       .executeTakeFirstOrThrow();
 
     const [lng, lat] = homes[index];
-    await db
+    const household = await db
       .insertInto("households")
       .values({
         user_id: user.id,
@@ -208,7 +264,9 @@ async function main(): Promise<void> {
         route_id: route.id,
         mapping_status: "auto",
       })
-      .execute();
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    residences.push({ id: household.id, full_name: household.full_name });
   }
 
   const unmappedUser = await db
@@ -236,18 +294,126 @@ async function main(): Promise<void> {
     })
     .execute();
 
+  // Yesterday's completed pass, with its trail and the collection evidence it
+  // produced. A ward that has never had a single collection is not a realistic
+  // starting state, and a fixture without one is a trap: tests that need a trip
+  // pass only on a database some earlier run happened to dirty.
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const trip = await db
+    .insertInto("trips")
+    .values({
+      route_id: route.id,
+      auto_id: veteranAuto.id,
+      driver_id: veteranDriver.id,
+      pass_number: 1,
+      service_date: yesterday.toISOString().slice(0, 10),
+      status: "completed",
+      started_at: new Date(yesterday.getTime() - 45 * 60_000),
+      ended_at: yesterday,
+      end_reason: "driver",
+      distance_covered_m: 1200,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  // A short trail down the same street the households sit on, so the trip has
+  // enough positions to be adopted as the route's path (FR-ROUTE-04).
+  for (let i = 0; i < 6; i++) {
+    await db
+      .insertInto("location_pings")
+      .values({
+        trip_id: trip.id,
+        auto_id: veteranAuto.id,
+        lat: 12.9612 + i * 0.0004,
+        lng: 77.5925,
+        accuracy_m: 6,
+        recorded_at: new Date(yesterday.getTime() - (6 - i) * 60_000),
+      })
+      .execute();
+  }
+
+  // The evidence the trail produced: each mapped household was served.
+  const served = await db
+    .selectFrom("households")
+    .select("id")
+    .where("route_id", "=", route.id)
+    .execute();
+  for (const household of served) {
+    await db
+      .insertInto("household_collections")
+      .values({
+        household_id: household.id,
+        trip_id: trip.id,
+        route_id: route.id,
+        pass_number: 1,
+        detected_at: yesterday,
+      })
+      .onConflict((oc) => oc.doNothing())
+      .execute();
+  }
+
+  // One complaint still open and one already answered. A ward with a complaints
+  // desk and no complaints in it cannot demonstrate the thing that desk is for —
+  // the GPS evidence beside each one — so the page photographs and demos as an
+  // empty state. The open one is deliberately about the *unserved* household so
+  // its evidence reads "the auto did not reach this house".
+  //
+  // Status is set with an UPDATE rather than on insert so the journal trigger
+  // writes the transition, exactly as it does for a real admin action.
+  const [firstResident, secondResident] = residences;
+  const openComplaint = await db
+    .insertInto("complaints")
+    .values({
+      household_id: secondResident.id,
+      ward_id: ward.id,
+      route_id: route.id,
+      category: "missed_pickup",
+      description: "Auto did not come today, waste is piling up at the gate.",
+      sla_due_at: new Date(Date.now() + DEFAULT_COMPLAINT_SLA_HOURS * 60 * 60 * 1000),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  const resolvedComplaint = await db
+    .insertInto("complaints")
+    .values({
+      household_id: firstResident.id,
+      ward_id: ward.id,
+      route_id: route.id,
+      category: "late",
+      description: "Auto came very late in the evening.",
+      created_at: yesterday,
+      sla_due_at: new Date(yesterday.getTime() + DEFAULT_COMPLAINT_SLA_HOURS * 60 * 60 * 1000),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  await db
+    .updateTable("complaints")
+    .set({
+      status: "resolved",
+      assigned_to: wardAdmin.id,
+      resolution_note: "Driver confirmed the pass ran late; schedule reinforced with the operator.",
+      updated_at: new Date(),
+    })
+    .where("id", "=", resolvedComplaint.id)
+    .execute();
+
   console.log(`
 Seed complete.
 
   Ward            ${ward.name} (${ward.id})
   Route           ${route.name} (${route.id}) — 2 passes/day, 06:00–10:00
-  Auto            ${auto.registration_number}
+  Autos           ${auto.registration_number}, ${veteranAuto.registration_number}
   Driver phone    ${DRIVER_PHONE}  (pre-provisioned, no account yet)
+  Driver (active) ${VETERAN_DRIVER_PHONE} / ${DEV_PASSWORD}
 
   Super admin     ${SUPER_ADMIN_PHONE} / ${DEV_PASSWORD}
   Ward admin      ${WARD_ADMIN_PHONE} / ${DEV_PASSWORD}
   Residents       ${RESIDENT_PHONES.join(", ")} / ${DEV_PASSWORD}
   Review queue    1 household pending route assignment
+  History         1 completed pass yesterday, ${served.length} households served
+  Complaints      1 open (${openComplaint.category}), 1 resolved (${resolvedComplaint.category})
 `);
   await db.destroy();
 }

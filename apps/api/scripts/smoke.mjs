@@ -201,6 +201,10 @@ await db.query(
 await db.query(`DELETE FROM trips WHERE route_id = $1 AND service_date = ${today}`, [
   route.id,
 ]);
+// Any *still-active* trip blocks the start too, whatever day it belongs to: the
+// guard in trips.service.ts is deliberately not date-bounded, so a run that left
+// one open before midnight would wedge every run after it.
+await db.query(`DELETE FROM trips WHERE route_id = $1 AND status = 'active'`, [route.id]);
 
 section("3. A new resident registers in Kannada, pin inside the route area");
 // Drop the pin at the centroid of the serviceable area, as a resident would

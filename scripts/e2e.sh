@@ -37,10 +37,30 @@ node "$ROOT/scripts/e2e-portal.mjs" "$PORTAL_URL" "$API_URL/v1"
 
 echo
 echo "════ 3/3  Mobile on a real device"
+# adb is what finds the device, and Android Studio does not put it on PATH. Same
+# story as the JDK below: resolve it here rather than let the suite depend on the
+# caller's shell. A genuinely missing SDK is a skip, not a failure — under
+# `set -e` an unresolved `adb` would otherwise abort the whole run with 127
+# *after* the API and portal legs had already passed.
+if ! command -v adb >/dev/null 2>&1; then
+  for candidate in \
+    "${ANDROID_HOME:-}/platform-tools" \
+    "${ANDROID_SDK_ROOT:-}/platform-tools" \
+    "$HOME/Library/Android/sdk/platform-tools"; do
+    [ -x "$candidate/adb" ] && export PATH="$candidate:$PATH" && break
+  done
+fi
+
 # Never guess the device. Grabbing the first attached one will happily install
 # onto somebody else's emulator if two are running — set ANDROID_SERIAL, or be
 # told which single device was found.
-ATTACHED="$(adb devices | awk '/\tdevice$/{print $1}')"
+if command -v adb >/dev/null 2>&1; then
+  SKIP_REASON="no Android device attached"
+  ATTACHED="$(adb devices | awk '/\tdevice$/{print $1}')"
+else
+  SKIP_REASON="adb not found — install Android platform-tools or set ANDROID_HOME"
+  ATTACHED=""
+fi
 COUNT="$(printf '%s\n' "$ATTACHED" | grep -c . || true)"
 
 if [ -n "${ANDROID_SERIAL:-}" ]; then
@@ -54,9 +74,22 @@ else
 fi
 
 if [ -z "$DEVICE" ]; then
-  echo "  … skipped: no Android device attached"
+  echo "  … skipped: $SKIP_REASON"
 else
+  # Gradle needs a JDK, and "Unable to locate a Java Runtime" is a confusing way
+  # to be told the suite depends on the caller's shell. Resolve it here instead.
+  if [ -z "${JAVA_HOME:-}" ]; then
+    for candidate in \
+      "/Applications/Android Studio.app/Contents/jbr/Contents/Home" \
+      /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home; do
+      [ -x "$candidate/bin/java" ] && export JAVA_HOME="$candidate" && break
+    done
+  fi
+  [ -n "${JAVA_HOME:-}" ] || fail "no JDK found — set JAVA_HOME (Android Gradle needs JDK 17)"
+  export PATH="$JAVA_HOME/bin:$PATH"
+
   echo "  device: $DEVICE"
+  echo "  jdk:    $JAVA_HOME"
   (cd "$ROOT/apps/mobile" && flutter test integration_test -d "$DEVICE")
 fi
 
