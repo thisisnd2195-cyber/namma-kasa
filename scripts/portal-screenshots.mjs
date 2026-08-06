@@ -6,7 +6,14 @@
  * few seconds for tiles, so map pages get a longer settle.
  *
  * Usage: node scripts/portal-screenshots.mjs
- * Needs: API on :4000, portal (next start) on :3000, seeded + staged data.
+ * Needs: API on :4000, portal (next start) on :3000, and a fresh seed.
+ *
+ * Run the seed immediately before this. The unit suite runs against the same
+ * database and assigns the pending household to a route, and a smoke run adopts
+ * the trip trail, which remaps it — either one leaves the review queue empty.
+ * Shooting afterwards is how the complaints and review-queue pages came to be
+ * committed as "Nothing here", documenting nothing. checkFixtures below refuses
+ * to photograph that state rather than producing a plausible-looking blank.
  */
 import { globSync } from "node:fs";
 import { mkdirSync } from "node:fs";
@@ -47,6 +54,35 @@ async function login(phone) {
   };
 }
 
+/**
+ * The pages that only say anything when there is queued work in them. An empty
+ * one is indistinguishable from a rendering bug once it is a PNG in the docs,
+ * so check the API before spending a browser on it.
+ */
+async function checkFixtures(session) {
+  const get = async (path) => {
+    const response = await fetch(`${API}${path}`, {
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    if (!response.ok) throw new Error(`GET ${path} → HTTP ${response.status}`);
+    return response.json();
+  };
+
+  const missing = [];
+  const queue = await get("/admin/households/review-queue");
+  if (!queue.length) missing.push("review queue is empty — no household pending assignment");
+  const open = await get("/admin/complaints?status=open");
+  if (!open.length) missing.push("no open complaint — the complaints page has nothing to show");
+
+  if (missing.length) {
+    console.error("Refusing to capture: the fixtures are not the documented state.\n");
+    for (const reason of missing) console.error(`  ✗ ${reason}`);
+    console.error("\nRe-seed, then run this again before anything else touches the database:");
+    console.error("  pnpm --filter @namma-kasa/api seed\n");
+    process.exit(1);
+  }
+}
+
 const browser = await puppeteer.launch({
   executablePath,
   headless: true,
@@ -72,6 +108,8 @@ async function shoot(name, path, session, { settleMs = 1200, fullPage = true } =
 
 const superAdmin = await login("919000000001");
 const wardAdmin = await login("919000000002");
+
+await checkFixtures(wardAdmin);
 
 console.log("Capturing as Super Admin:");
 await shoot("login", "/login", null);

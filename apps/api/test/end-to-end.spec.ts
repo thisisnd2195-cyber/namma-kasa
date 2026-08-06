@@ -267,23 +267,34 @@ describe("trip tracking end to end (Constitution V)", () => {
       username: "namma-kasa-ingest",
       password: "devpassword",
     });
-    await client.publishAsync(
-      `trips/${fixture.tripId}/pings`,
-      // Field names must match ping_spool.dart's toJson exactly; a mismatch
-      // here is silently dropped by the consumer's safeParse.
-      JSON.stringify([
-        {
-          lat: fixture.lat,
-          lng: fixture.lng,
-          recordedAt: new Date().toISOString(),
-          seq: nextSeq(),
-          accuracy: 8,
-        },
-      ]),
-      { qos: 1 },
-    );
+    const ping = () =>
+      client.publishAsync(
+        `trips/${fixture.tripId}/pings`,
+        // Field names must match ping_spool.dart's toJson exactly; a mismatch
+        // here is silently dropped by the consumer's safeParse.
+        JSON.stringify([
+          {
+            lat: fixture.lat,
+            lng: fixture.lng,
+            recordedAt: new Date().toISOString(),
+            seq: nextSeq(),
+            accuracy: 8,
+          },
+        ]),
+        { qos: 1 },
+      );
+
+    // A driver streams pings; this sent exactly one. The consumer's subscription
+    // is established asynchronously, and a lone publish that lands before it is
+    // ready has nobody to deliver it to — the broker drops it and the test then
+    // waits out its whole timeout. That is what made this the one flaky test in
+    // the suite, failing roughly one run in four. Keep pinging until the frame
+    // comes back; the gateway's per-socket throttle means only the first is sent.
+    await ping();
+    const keepPinging = setInterval(() => void ping().catch(() => {}), 300);
 
     const received = await frame;
+    clearInterval(keepPinging);
     await client.endAsync();
     socket.close();
 

@@ -196,7 +196,17 @@ describe("recorded route path (FR-ROUTE-04)", () => {
       .where("route_id", "is not", null)
       .executeTakeFirstOrThrow();
 
-    await db.updateTable("trips").set({ status: "completed" }).where("id", "=", trip.id).execute();
+    // ended_at matters as much as the status here: recordableTrips orders by it
+    // DESC NULLS LAST and keeps only 20. Completed trips pile up on this route
+    // as the suite is re-run, so a trip left with a null ended_at — which the
+    // app never produces, since ending one always stamps it — eventually sorts
+    // past the limit and the trip this test just prepared vanishes from its own
+    // candidate list.
+    await db
+      .updateTable("trips")
+      .set({ status: "completed", ended_at: new Date() })
+      .where("id", "=", trip.id)
+      .execute();
 
     // A short trail; ST_MakeLine needs at least two points.
     const existing = await db
