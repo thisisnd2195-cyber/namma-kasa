@@ -3,10 +3,26 @@
 #
 # The container's Postgres intermittently logs "server process (PID n) exited
 # with exit code 2" and restarts the whole cluster. The dying PID logs nothing —
-# no statement, no error, no signal — and exit code 2 is _exit(2), the SIGQUIT
-# path, not an error Postgres chose to report. Every crash so far has landed
-# inside a window when the vitest suite was being run repeatedly; idle hours and
-# whole e2e runs have never produced one.
+# no statement, no error, no signal.
+#
+# Leading theory, evidenced rather than assumed: shared-VM disk contention, not
+# a namma-kasa bug. This machine runs several unrelated projects' docker compose
+# stacks on one colima VM (4 CPU / 10GiB, virtiofs-backed). The densest crash
+# cluster on 2026-08-06 (six crashes in three minutes) exactly overlapped another
+# project's ten-container stack being created from cold — image work, a dozen
+# processes starting, migrations — and namma-kasa's own log shows the damage
+# directly: "autovacuum worker took too long to start; canceled" at the same
+# minute, and checkpoint writes of a few hundred buffers (normally sub-second)
+# taking 20-40 seconds, both then and as recently as the following night. That
+# is I/O queue starvation, not a slow query or a resource limit — nothing here
+# was CPU-bound. Sixteen isolated seeded-vitest runs, with nothing else on the
+# VM churning, produced zero crashes, which fits: namma-kasa alone doesn't
+# generate the contention, only sharing the disk with a concurrent stack does.
+#
+# This script still earns its keep as an independent check: it names the
+# client behind the next dead PID rather than assuming the cause. If the next
+# capture shows the crash landing with no other stack in mid-startup on the
+# host, that reopens the question.
 #
 # So this does two things, every couple of seconds:
 #   1. snapshots pg_stat_activity, so the connection behind the next dead PID is
